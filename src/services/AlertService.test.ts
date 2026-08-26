@@ -12,7 +12,7 @@ const makeAlert = (finding: PersistAlertFinding): Alert => ({ id: "a1", assetId:
 
 function repository(reading: number | null): AlertRepository {
   return {
-    list: vi.fn().mockResolvedValue([]), findById: vi.fn().mockResolvedValue(null), findByFingerprint: vi.fn().mockResolvedValue(null), getHistory: vi.fn().mockResolvedValue([] as AlertHistoryEntry[]),
+    create: vi.fn(), list: vi.fn().mockResolvedValue([]), findById: vi.fn().mockResolvedValue(null), findActive: vi.fn().mockResolvedValue([]), findByAsset: vi.fn().mockResolvedValue([]), update: vi.fn(), delete: vi.fn(), search: vi.fn().mockResolvedValue([]), findByFingerprint: vi.fn().mockResolvedValue(null), getHistory: vi.fn().mockResolvedValue([] as AlertHistoryEntry[]),
     getEvaluationData: vi.fn().mockResolvedValue({ asset: { assetId: "MM-000001", status: "Active", name: "Pump", manufacturer: "Mecha", model: "P1", category: "Pump", location: null, createdAt: now }, inspections: [], maintenance: [], readings: reading === null ? [] : [{ recordedAt: now, temperature: reading, vibration: null, voltage: null, current: null, humidity: null }] }),
     findAssetIdForSensor: vi.fn().mockResolvedValue("MM-000001"), upsertFinding: vi.fn(async (finding) => ({ alert: makeAlert(finding), changed: true })), resolveMissing: vi.fn().mockResolvedValue([]), acknowledge: vi.fn(), resolve: vi.fn(),
   };
@@ -32,5 +32,18 @@ describe("AlertService", () => {
     const alerts = repository(null);
     await new AlertService(alerts, new AlertEngine(), new HealthEngine(), new RecommendationEngine(), { explain: vi.fn() }, new NotificationService([])).evaluateAsset("MM-000001", "Health Recalculation");
     expect(alerts.resolveMissing).toHaveBeenCalledWith("MM-000001", ["MM-000001:failure_probability"], "Alert Engine");
+  });
+
+  it("enforces lifecycle rules and logs acknowledgements and resolutions", async () => {
+    const alerts = repository(null); const open = makeAlert({ assetId: "MM-000001", fingerprint: "manual:1", severity: "High", category: "Engineering", source: "Health", metric: "health_trend", title: "Bearing risk", triggerType: null, triggerId: null, observedValue: 50, thresholdValue: 40, description: "Risk increased", recommendation: "Inspect bearing" });
+    vi.mocked(alerts.findById).mockResolvedValue(open);
+    vi.mocked(alerts.acknowledge).mockResolvedValue({ ...open, status: "Acknowledged", acknowledgedAt: now });
+    vi.mocked(alerts.resolve).mockResolvedValue({ ...open, status: "Resolved", resolvedAt: now });
+    const logger = { info: vi.fn() };
+    const service = new AlertService(alerts, new AlertEngine(), new HealthEngine(), new RecommendationEngine(), { explain: vi.fn() }, new NotificationService([]), logger);
+    await service.acknowledge(open.id, "Engineer");
+    await service.resolve(open.id, "Engineer");
+    expect(logger.info).toHaveBeenCalledWith("alert acknowledged", expect.objectContaining({ alertId: open.id }));
+    expect(logger.info).toHaveBeenCalledWith("alert resolved", expect.objectContaining({ alertId: open.id }));
   });
 });

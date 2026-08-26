@@ -49,32 +49,33 @@ model Asset {
 }
 
 model Alert {
-  id              String         @id @default(cuid())
-  assetId         String         @map("assetDbId")
-  asset           Asset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
-  fingerprint     String         @unique
-  severity        String
-  category        String         @default("Engineering")
-  status          String         @default("Open")
-  source          String
-  metric          String
-  title           String
-  description     String         @default("") @map("explanation")
-  recommendation  String
-  triggerType     String?
-  triggerId       String?
-  observedValue   Float?
-  thresholdValue  Float?
-  acknowledgedAt  DateTime?
-  acknowledgedBy  String?
-  resolvedAt      DateTime?
-  resolvedBy      String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-  history         AlertHistory[]
+  id             String         @id @default(cuid())
+  assetId        String         @map("assetDbId")
+  asset          Asset          @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  fingerprint    String         @unique
+  severity       String
+  category       String         @default("Engineering")
+  status         String         @default("Open")
+  source         String
+  metric         String
+  title          String
+  description    String         @default("") @map("explanation")
+  recommendation String
+  triggerType    String?
+  triggerId      String?
+  observedValue  Float?
+  thresholdValue Float?
+  acknowledgedAt DateTime?
+  acknowledgedBy String?
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  history        AlertHistory[]
 
   @@index([status, severity, updatedAt])
   @@index([assetId, updatedAt])
+  @@index([category, source, createdAt])
 }
 
 model AlertHistory {
@@ -167,11 +168,11 @@ model AIReport {
 }
 
 model CopilotConversation {
-  id        String                   @id @default(cuid())
-  title     String                   @default("Engineering conversation")
-  assetIds  String                   @default("[]")
-  createdAt DateTime                 @default(now())
-  updatedAt DateTime                 @updatedAt
+  id        String                       @id @default(cuid())
+  title     String                       @default("Engineering conversation")
+  assetIds  String                       @default("[]")
+  createdAt DateTime                     @default(now())
+  updatedAt DateTime                     @updatedAt
   messages  CopilotConversationMessage[]
 }
 

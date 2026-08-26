@@ -1,22 +1,33 @@
 import "server-only";
-import type { Alert, AlertHistoryEntry, AlertSeverity, AlertSource, AlertStatus, AlertMetric } from "@/domain/entities/Alert";
+import type { Alert, AlertCategory, AlertHistoryEntry, AlertSeverity, AlertSource, AlertStatus, AlertMetric } from "@/domain/entities/Alert";
 import type { AlertListQueryDto } from "@/dto/alert.dto";
+import type { CreateAlertDto, UpdateAlertDto } from "@/dto/alert.dto";
 import type { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import type { AlertRepository, PersistAlertFinding } from "@/repositories/AlertRepository";
 
 const includeAsset = { asset: { include: { equipment: true } } } as const;
 type AlertRow = Prisma.AlertGetPayload<{ include: typeof includeAsset }>;
-const toDomain = (row: AlertRow): Alert => ({ id: row.id, assetId: row.asset.assetId, assetName: row.asset.equipment.name, fingerprint: row.fingerprint, severity: row.severity as AlertSeverity, category: row.category, status: row.status as AlertStatus, source: row.source as AlertSource, metric: row.metric as AlertMetric, title: row.title, description: row.description, recommendation: row.recommendation, triggerType: row.triggerType, triggerId: row.triggerId, observedValue: row.observedValue, thresholdValue: row.thresholdValue, acknowledgedAt: row.acknowledgedAt, acknowledgedBy: row.acknowledgedBy, resolvedAt: row.resolvedAt, resolvedBy: row.resolvedBy, createdAt: row.createdAt, updatedAt: row.updatedAt });
+const toDomain = (row: AlertRow): Alert => ({ id: row.id, assetId: row.asset.assetId, assetName: row.asset.equipment.name, fingerprint: row.fingerprint, severity: row.severity as AlertSeverity, category: row.category as AlertCategory, status: row.status as AlertStatus, source: row.source as AlertSource, metric: row.metric as AlertMetric, title: row.title, description: row.description, recommendation: row.recommendation, triggerType: row.triggerType, triggerId: row.triggerId, observedValue: row.observedValue, thresholdValue: row.thresholdValue, acknowledgedAt: row.acknowledgedAt, acknowledgedBy: row.acknowledgedBy, resolvedAt: row.resolvedAt, resolvedBy: row.resolvedBy, createdAt: row.createdAt, updatedAt: row.updatedAt });
 const toHistory = (row: { id: string; alertId: string; eventType: string; fromValue: string | null; toValue: string | null; actor: string | null; note: string | null; createdAt: Date }): AlertHistoryEntry => row;
 const evaluationInclude = { equipment: { include: { maintenanceRecords: { orderBy: { maintenanceDate: "asc" as const } }, sensorDevices: { include: { readings: { orderBy: { recordedAt: "desc" as const }, take: 100 } } } } }, inspections: { orderBy: { inspectionDate: "asc" as const }, include: { aiReport: true } } };
 
 export class PrismaAlertRepository implements AlertRepository {
+  async create(input: CreateAlertDto) {
+    const asset = await prisma.asset.findUniqueOrThrow({ where: { assetId: input.assetId }, select: { id: true } });
+    const row = await prisma.alert.create({ data: { ...input, assetId: asset.id, fingerprint: `manual:${input.assetId}:${crypto.randomUUID()}`, metric: "health_trend" }, include: includeAsset });
+    return toDomain(row);
+  }
   async list(filters: AlertListQueryDto) {
     const rows = await prisma.alert.findMany({ where: { severity: filters.severity, status: filters.status, category: filters.category || undefined, asset: filters.assetId ? { assetId: filters.assetId } : undefined, OR: filters.search ? [{ title: { contains: filters.search } }, { description: { contains: filters.search } }, { recommendation: { contains: filters.search } }, { asset: { assetId: { contains: filters.search } } }, { asset: { equipment: { is: { name: { contains: filters.search } } } } }] : undefined }, include: includeAsset, orderBy: { updatedAt: "desc" } });
     return rows.map(toDomain);
   }
   async findById(id: string) { const row = await prisma.alert.findUnique({ where: { id }, include: includeAsset }); return row ? toDomain(row) : null; }
+  async findActive() { return (await prisma.alert.findMany({ where: { status: { not: "Resolved" } }, include: includeAsset, orderBy: { updatedAt: "desc" } })).map(toDomain); }
+  async findByAsset(assetId: string) { return (await prisma.alert.findMany({ where: { asset: { assetId } }, include: includeAsset, orderBy: { updatedAt: "desc" } })).map(toDomain); }
+  async update(id: string, input: UpdateAlertDto) { return toDomain(await prisma.alert.update({ where: { id }, data: input, include: includeAsset })); }
+  async delete(id: string) { await prisma.alert.delete({ where: { id } }); }
+  async search(query: string) { return this.list({ search: query, sort: "newest" }); }
   async findByFingerprint(fingerprint: string) { const row = await prisma.alert.findUnique({ where: { fingerprint }, include: includeAsset }); return row ? toDomain(row) : null; }
   async getHistory(alertId: string) { return (await prisma.alertHistory.findMany({ where: { alertId }, orderBy: { createdAt: "asc" } })).map(toHistory); }
   async getEvaluationData(assetId: string) {

@@ -7,5 +7,11 @@ describe("RecommendationEngine", () => {
     expect(recommendation).toContain("risk-based maintenance");
     expect(recommendation).toContain("critical");
   });
-});
 
+  it("uses severity, category, and health to recommend an engineering action", () => {
+    const recommendation = new RecommendationEngine().recommend("Critical", "Safety", 25);
+    expect(recommendation).toContain("Immediately isolate");
+    expect(recommendation).toContain("safety");
+    expect(recommendation).toContain("root-cause assessment");
+  });
+});
