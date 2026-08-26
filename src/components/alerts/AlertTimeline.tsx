@@ -1,0 +1,7 @@
+import type { Alert, AlertHistoryEntry } from "@/domain/entities/Alert";
+
+export function AlertTimeline({ alert, history }: { alert: Alert | null; history: AlertHistoryEntry[] }) {
+  if (!alert) return <aside className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-500 shadow-sm dark:border-slate-800 dark:bg-slate-900">Select an alert to inspect its history and timeline.</aside>;
+  return <aside className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600">Alert timeline</p><h2 className="mt-2 font-semibold">{alert.assetId} · {alert.metric.replace("_", " ")}</h2><div className="mt-5 space-y-0">{history.map((entry, index) => <div key={entry.id} className="relative flex gap-3 pb-5"><div className="relative z-10 mt-1.5 h-3 w-3 shrink-0 rounded-full bg-cyan-500" />{index < history.length - 1 ? <span className="absolute left-[5px] top-4 h-full w-px bg-slate-200 dark:bg-slate-700" /> : null}<div><p className="text-sm font-medium">{entry.eventType}</p><p className="mt-1 text-xs text-slate-500">{entry.createdAt.toLocaleString("en-GB")} · {entry.actor ?? "System"}</p>{entry.fromValue || entry.toValue ? <p className="mt-1 text-xs text-slate-600 dark:text-slate-300">{entry.fromValue ?? "—"} → {entry.toValue ?? "—"}</p> : null}{entry.note ? <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{entry.note}</p> : null}</div></div>)}</div></aside>;
+}
+

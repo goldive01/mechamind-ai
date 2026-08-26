@@ -1,0 +1,24 @@
+import { AlertList } from "@/components/alerts/AlertList";
+import { AlertTimeline } from "@/components/alerts/AlertTimeline";
+import { PageHeader } from "@/components/PageHeader";
+import { alertListQuerySchema } from "@/dto/alert.dto";
+import { createAlertService } from "@/services/alertFactory";
+
+export const dynamic = "force-dynamic";
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+const value = (input: string | string[] | undefined) => typeof input === "string" ? input : undefined;
+
+export default async function AlertsPage({ searchParams }: { searchParams: SearchParams }) {
+  const params = await searchParams;
+  const filters = alertListQuerySchema.parse({ severity: value(params.severity) || undefined, status: value(params.status) || undefined, assetId: value(params.assetId) || undefined, category: value(params.category) || undefined, search: value(params.search) || undefined, sort: value(params.sort) || undefined });
+  const service = createAlertService();
+  const alerts = await service.list(filters);
+  const selectedId = value(params.alertId);
+  const selected = selectedId ? await service.get(selectedId) : null;
+  const history = selected ? await service.history(selected.id) : [];
+  const filterEntries = Object.entries({ severity: filters.severity, status: filters.status, assetId: filters.assetId, category: filters.category, search: filters.search, sort: filters.sort }).filter((entry): entry is [string, string] => Boolean(entry[1]));
+  const queryString = new URLSearchParams(filterEntries).toString();
+  const counts = { critical: alerts.filter((alert) => alert.severity === "Critical" && alert.status !== "Resolved").length, open: alerts.filter((alert) => alert.status === "Open").length, acknowledged: alerts.filter((alert) => alert.status === "Acknowledged").length };
+
+  return <div className="space-y-6"><PageHeader title="Alert Center" description="Autonomous monitoring alerts from telemetry, inspections, AI reports, health trends, and failure probability." /><div className="grid gap-4 sm:grid-cols-3"><div className="rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/30"><p className="text-xs uppercase tracking-[0.18em] text-red-600">Critical active</p><p className="mt-2 text-3xl font-semibold">{counts.critical}</p></div><div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Open</p><p className="mt-2 text-3xl font-semibold">{counts.open}</p></div><div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"><p className="text-xs uppercase tracking-[0.18em] text-slate-500">Acknowledged</p><p className="mt-2 text-3xl font-semibold">{counts.acknowledged}</p></div></div><form className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 xl:grid-cols-7 dark:border-slate-800 dark:bg-slate-900"><input name="search" defaultValue={filters.search ?? ""} placeholder="Search alerts" className="rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-700" /><select name="severity" defaultValue={filters.severity ?? ""} className="rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-700"><option value="">All severities</option>{["Critical", "High", "Medium", "Low"].map((item) => <option key={item}>{item}</option>)}</select><select name="status" defaultValue={filters.status ?? ""} className="rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-700"><option value="">All statuses</option>{["Open", "Acknowledged", "Resolved"].map((item) => <option key={item}>{item}</option>)}</select><select name="category" defaultValue={filters.category ?? ""} className="rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-700"><option value="">All categories</option><option>Sensor Telemetry</option><option>Predictive Health</option></select><input name="assetId" defaultValue={filters.assetId ?? ""} placeholder="Asset ID" className="rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-700" /><select name="sort" defaultValue={filters.sort} className="rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-700"><option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="severity">Severity</option><option value="asset">Asset ID</option></select><button className="rounded-xl bg-cyan-500 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-400">Apply</button></form><div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]"><AlertList alerts={alerts} queryString={queryString} /><AlertTimeline alert={selected} history={history} /></div></div>;
+}
