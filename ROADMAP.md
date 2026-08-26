@@ -35,17 +35,20 @@
 ### ✅ Capability 2
 - Automatic Alert Evaluation
 
-### ⏳ Capability 3
+### ✅ Capability 3
 - Alert Dashboard
 
-### ⏳ Capability 4
-- Alert Timeline
+### ✅ Capability 4
+- AI Recommendation Engine
+- Deterministic Engineering Rules
+- Optional AI Enhancement
+- Alert, Copilot, and Alert Details Integration
 
-### ⏳ Capability 5
-- AI Recommendations
-
-### ⏳ Capability 6
-- Notification Framework
+### ✅ Capability 5
+- Engineering Timeline Intelligence
+- Asset Timeline
+- Trend Explanation
+- Optional AI Summary
 
 ## Future Versions
 

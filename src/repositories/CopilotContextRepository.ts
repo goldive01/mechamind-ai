@@ -8,6 +8,7 @@ export interface CopilotContextRecord {
     sensorDevices: Array<{ deviceName: string; readings: Array<{ recordedAt: Date; temperature: number | null; humidity: number | null; vibration: number | null; voltage: number | null; current: number | null }> }>;
   };
   inspections: Array<{ id: string; inspectionDate: Date; overallCondition: string; notes: string | null; aiReport: { diagnosis: string; recommendations: string; riskLevel: string } | null }>;
+  alerts: Array<{ severity: string; source: string; title: string; recommendation: string }>;
 }
 
 export interface CopilotContextRepository {

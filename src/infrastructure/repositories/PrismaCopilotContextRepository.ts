@@ -18,6 +18,7 @@ export class PrismaCopilotContextRepository implements CopilotContextRepository 
           sensorDevices: { select: { deviceName: true, readings: { orderBy: { recordedAt: "desc" }, take: 24, select: { recordedAt: true, temperature: true, humidity: true, vibration: true, voltage: true, current: true } } } },
         } },
         inspections: { orderBy: { inspectionDate: "desc" }, take: 8, select: { id: true, inspectionDate: true, overallCondition: true, notes: true, aiReport: { select: { diagnosis: true, recommendations: true, riskLevel: true } } } },
+        alerts: { where: { status: { not: "Resolved" } }, orderBy: { updatedAt: "desc" }, take: 8, select: { severity: true, source: true, title: true, recommendation: true } },
       },
       orderBy: { assetId: "asc" },
     });

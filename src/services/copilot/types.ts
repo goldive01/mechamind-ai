@@ -5,7 +5,7 @@ export interface CopilotMessage {
   content: string;
 }
 
-export interface CopilotAlert { severity: "high" | "critical"; source: "health" | "sensor" | "inspection"; message: string }
+export interface CopilotAlert { severity: "low" | "medium" | "high" | "critical"; source: "health" | "sensor" | "inspection" | "alert"; message: string; recommendation?: unknown }
 
 export interface CopilotAssetContext {
   asset: {

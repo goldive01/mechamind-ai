@@ -5,11 +5,10 @@ import { AIAlertExplanationService } from "@/services/AlertExplanationService";
 import { AlertService } from "@/services/AlertService";
 import { HealthEngine } from "@/services/HealthEngine";
 import { NotificationService } from "@/services/NotificationService";
-import { RecommendationEngine } from "@/services/RecommendationEngine";
+import { OpenAIRecommendationEnhancer, RecommendationEngine } from "@/services/RecommendationEngine";
 import { LogNotificationProvider } from "@/services/notifications/LogNotificationProvider";
 
 export function createAlertService() {
-  const recommendations = new RecommendationEngine();
+  const recommendations = new RecommendationEngine(undefined, new OpenAIRecommendationEnhancer());
   return new AlertService(new PrismaAlertRepository(), new AlertEngine(), new HealthEngine(), recommendations, new AIAlertExplanationService(recommendations), new NotificationService([new LogNotificationProvider("Email"), new LogNotificationProvider("Push"), new LogNotificationProvider("SMS")]));
 }
-

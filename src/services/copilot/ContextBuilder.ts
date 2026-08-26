@@ -1,6 +1,7 @@
 import type { CopilotContextRepository } from "@/repositories/CopilotContextRepository";
 import { HealthEngine } from "@/services/HealthEngine";
 import type { CopilotAlert, CopilotAssetContext } from "@/services/copilot/types";
+import { parseRecommendation } from "@/dto/recommendation.dto";
 
 function deriveAlerts(health: CopilotAssetContext["health"], readings: CopilotAssetContext["sensorReadings"], inspections: CopilotAssetContext["inspections"]): CopilotAlert[] {
   const alerts: CopilotAlert[] = [];
@@ -29,11 +30,10 @@ export class ContextBuilder {
         maintenanceHistory: asset.equipment.maintenanceRecords.map((record) => ({ date: record.maintenanceDate.toISOString(), type: record.maintenanceType, performedBy: record.performedBy, notes: record.notes })),
         sensorReadings: asset.equipment.sensorDevices.flatMap((device) => device.readings.map((reading) => ({ deviceName: device.deviceName, recordedAt: reading.recordedAt.toISOString(), temperature: reading.temperature, humidity: reading.humidity, vibration: reading.vibration, voltage: reading.voltage, current: reading.current }))),
         health: { overallHealth: score.overallHealth, mechanicalHealth: score.mechanicalHealth, electricalHealth: score.electricalHealth, safetyScore: score.safetyScore, failureProbability: score.failureProbability, maintenancePriority: score.maintenancePriority, drivers: score.drivers },
-        alerts: [],
+        alerts: asset.alerts.map((alert) => ({ severity: alert.severity.toLowerCase() as CopilotAlert["severity"], source: "alert" as const, message: alert.title, recommendation: parseRecommendation(alert.recommendation) ?? alert.recommendation })),
       };
-      context.alerts = deriveAlerts(context.health, context.sensorReadings, context.inspections);
+      context.alerts.push(...deriveAlerts(context.health, context.sensorReadings, context.inspections));
       return context;
     });
   }
 }
-

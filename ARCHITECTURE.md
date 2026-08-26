@@ -52,3 +52,7 @@ The v1.3 alert domain foundation defines persistence-independent severity, categ
 ### Automatic alert evaluation
 
 `AlertEvaluationService` is the application boundary for automatic evaluation. Sensor persistence invokes it with the saved reading identity; the atomic inspection/AI-report save invokes it once for each persisted record; and health recalculation invokes it after producing the latest score. Evaluation covers temperature, vibration, voltage, current, humidity, overall health, and failure probability. Stable per-asset metric fingerprints make active findings idempotent, while conditions absent from the latest finding set are resolved automatically. Every attempt emits structured start/completion logs, including missing-asset and resolution outcomes. Workflow services isolate evaluation failures so their primary persistence operations remain unchanged.
+
+### Engineering timeline intelligence
+
+`TimelineService` aggregates inspections, sensor readings, derived health history, alerts, structured recommendations, and maintenance records through `TimelineRepository`. It produces a validated, reverse-chronological asset timeline and deterministic trend explanation. An optional AI summarizer may refine that explanation, but failures fall back to the deterministic result. The asset timeline route consumes only the service and DTO boundary; Prisma access remains isolated in infrastructure.

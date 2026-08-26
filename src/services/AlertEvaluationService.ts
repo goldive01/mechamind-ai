@@ -6,6 +6,7 @@ import type { AlertExplainer } from "@/services/AlertExplanationService";
 import { HealthEngine } from "@/services/HealthEngine";
 import { NotificationService } from "@/services/NotificationService";
 import { RecommendationEngine } from "@/services/RecommendationEngine";
+import { serializeRecommendation } from "@/dto/recommendation.dto";
 
 export type AlertTrigger = "Sensor Reading" | "Inspection" | "AI Report" | "Health Recalculation";
 
@@ -52,7 +53,8 @@ export class AlertEvaluationService implements AlertMonitor {
     for (const finding of findings) {
       const existing = await this.alerts.findByFingerprint(finding.fingerprint);
       const description = existing && existing.severity === finding.severity && existing.status !== "Resolved" ? existing.description : await this.explainer.explain(finding);
-      const result = await this.alerts.upsertFinding({ ...finding, description, recommendation: this.recommendations.recommend(finding) });
+      const recommendation = await this.recommendations.generate(finding);
+      const result = await this.alerts.upsertFinding({ ...finding, description, recommendation: serializeRecommendation(recommendation) });
       active.push(result.alert);
       if (result.changed) await this.notifications.notify(result.alert);
     }
