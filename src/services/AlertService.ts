@@ -43,6 +43,7 @@ export class AlertService extends AlertEvaluationService {
     if (current.status === "Resolved") throw new Error("Resolved alerts cannot be acknowledged.");
     if (current.status === "Acknowledged") return current;
     const alert = await this.repository.acknowledge(id, actor, note);
+    this.notifications.cancelAlert(id);
     this.lifecycleLogger.info("alert acknowledged", { alertId: alert.id, assetId: alert.assetId, actor });
     return alert;
   }
@@ -50,6 +51,7 @@ export class AlertService extends AlertEvaluationService {
     const current = await this.requireAlert(id);
     if (current.status === "Resolved") return current;
     const alert = await this.repository.resolve(id, actor, note);
+    this.notifications.cancelAlert(id);
     this.lifecycleLogger.info("alert resolved", { alertId: alert.id, assetId: alert.assetId, actor });
     return alert;
   }

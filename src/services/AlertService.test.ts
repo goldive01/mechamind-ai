@@ -21,11 +21,13 @@ function repository(reading: number | null): AlertRepository {
 describe("AlertService", () => {
   it("persists findings, recommendations, explanations, and notifications", async () => {
     const alerts = repository(125); const provider = { channel: "Email" as const, send: vi.fn().mockResolvedValue(undefined) };
-    const service = new AlertService(alerts, new AlertEngine(), new HealthEngine(), new RecommendationEngine(), { explain: vi.fn().mockResolvedValue("AI explanation") }, new NotificationService([provider]));
+    const notifications = new NotificationService([provider]);
+    const service = new AlertService(alerts, new AlertEngine(), new HealthEngine(), new RecommendationEngine(), { explain: vi.fn().mockResolvedValue("AI explanation") }, notifications);
     const result = await service.evaluateAsset("MM-000001", "Sensor Reading");
     expect(result[0]).toMatchObject({ severity: "Critical", description: "AI explanation" });
     expect(alerts.upsertFinding).toHaveBeenCalledWith(expect.objectContaining({ metric: "temperature", recommendation: expect.stringContaining("cooling") }));
-    expect(provider.send).toHaveBeenCalledTimes(result.length);
+    expect(provider.send).toHaveBeenCalledTimes(2);
+    expect(notifications.pending()).toEqual(expect.arrayContaining([expect.objectContaining({ mode: "Daily Summary" })]));
   });
 
   it("resolves prior active alerts when conditions normalize", async () => {

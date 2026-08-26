@@ -50,6 +50,11 @@
 - Trend Explanation
 - Optional AI Summary
 
+### ✅ Capability 6
+- Intelligent Notification & Escalation Engine
+- Severity-based Notification Queue
+- Email, Push, SMS, Teams, Slack, and Webhook Providers
+
 ## Future Versions
 
 ### Version 1.4

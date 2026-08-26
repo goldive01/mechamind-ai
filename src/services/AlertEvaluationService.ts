@@ -22,7 +22,7 @@ export class AlertEvaluationService implements AlertMonitor {
     private readonly health: HealthEngine,
     private readonly recommendations: RecommendationEngine,
     private readonly explainer: AlertExplainer,
-    private readonly notifications: NotificationService,
+    protected readonly notifications: NotificationService,
     private readonly logger: Pick<Logger, "info"> = createLogger("AlertEvaluationService"),
   ) {}
 

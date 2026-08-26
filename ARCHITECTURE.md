@@ -56,3 +56,7 @@ The v1.3 alert domain foundation defines persistence-independent severity, categ
 ### Engineering timeline intelligence
 
 `TimelineService` aggregates inspections, sensor readings, derived health history, alerts, structured recommendations, and maintenance records through `TimelineRepository`. It produces a validated, reverse-chronological asset timeline and deterministic trend explanation. An optional AI summarizer may refine that explanation, but failures fall back to the deterministic result. The asset timeline route consumes only the service and DTO boundary; Prisma access remains isolated in infrastructure.
+
+### Intelligent notifications and escalation
+
+`NotificationEngine` converts changed alerts into validated notification DTOs using severity plans from `EscalationEngine`. `NotificationQueue` separates scheduling from dispatch: critical and high alerts dispatch immediately, critical alerts retain delayed escalation jobs until acknowledged or resolved, medium alerts wait for the daily summary window, and low alerts are logged only. `NotificationService` dispatches due jobs through a provider abstraction. Email, push, SMS, Teams, Slack, and webhook providers are intentionally log-only in v1.3; external delivery and durable queue infrastructure remain future adapter concerns.
