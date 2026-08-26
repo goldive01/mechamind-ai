@@ -1,6 +1,6 @@
 import type { AssetOperationsRepository } from "@/repositories/AssetOperationsRepository";
 import { HealthEngine } from "@/services/HealthEngine";
-import type { AlertMonitor } from "@/services/AlertService";
+import type { AlertMonitor } from "@/services/AlertEvaluationService";
 import { createLogger } from "@/infrastructure/logging/Logger";
 
 const logger = createLogger("AssetQueryService");

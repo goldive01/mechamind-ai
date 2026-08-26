@@ -11,7 +11,7 @@ import { PrismaAlertRepository } from "@/infrastructure/repositories/PrismaAlert
 
 const now = new Date("2026-08-26T09:00:00Z");
 const row = {
-  id: "alert-1", assetId: "asset-db-1", fingerprint: "manual:MM-000001:1", severity: "High", category: "Engineering", status: "Open", source: "Health", metric: "health_trend", title: "Bearing risk", description: "Risk increased", recommendation: "Inspect bearing", triggerType: null, triggerId: null, observedValue: null, thresholdValue: null, acknowledgedAt: null, acknowledgedBy: null, resolvedAt: null, resolvedBy: null, createdAt: now, updatedAt: now,
+  id: "alert-1", assetId: "asset-db-1", fingerprint: "manual:MM-000001:1", severity: "High", category: "Engineering", status: "Open", source: "Health", metric: "overall_health", title: "Bearing risk", description: "Risk increased", recommendation: "Inspect bearing", triggerType: null, triggerId: null, observedValue: null, thresholdValue: null, acknowledgedAt: null, acknowledgedBy: null, resolvedAt: null, resolvedBy: null, createdAt: now, updatedAt: now,
   asset: { assetId: "MM-000001", equipment: { name: "Pump" } },
 };
 

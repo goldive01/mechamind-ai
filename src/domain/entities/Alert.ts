@@ -24,7 +24,7 @@ export enum Status {
 export type AlertSeverity = `${Severity}`;
 export type AlertCategory = `${Category}`;
 export type AlertStatus = `${Status}`;
-export type AlertMetric = "temperature" | "vibration" | "voltage" | "current" | "humidity" | "health_trend" | "failure_probability";
+export type AlertMetric = "temperature" | "vibration" | "voltage" | "current" | "humidity" | "overall_health" | "failure_probability";
 export type AlertSource = "Sensor" | "Health" | "Inspection" | "AI Report";
 
 export interface Alert {

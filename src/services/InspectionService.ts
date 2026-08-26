@@ -1,7 +1,7 @@
 import { analysisDtoSchema } from "@/dto/analysis.dto";
 import { saveImageUpload } from "@/lib/uploads";
 import type { InspectionRepository } from "@/repositories/InspectionRepository";
-import type { AlertMonitor } from "@/services/AlertService";
+import type { AlertMonitor } from "@/services/AlertEvaluationService";
 import { createLogger } from "@/infrastructure/logging/Logger";
 
 const logger = createLogger("InspectionService");

@@ -1,6 +1,6 @@
 import type { DeviceInputDto, SensorReadingDto } from "@/dto/sensor.dto";
 import type { SensorRepository } from "@/repositories/SensorRepository";
-import type { AlertMonitor } from "@/services/AlertService";
+import type { AlertMonitor } from "@/services/AlertEvaluationService";
 import { createLogger } from "@/infrastructure/logging/Logger";
 
 const logger = createLogger("SensorService");

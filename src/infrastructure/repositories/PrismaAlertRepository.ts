@@ -15,7 +15,7 @@ const evaluationInclude = { equipment: { include: { maintenanceRecords: { orderB
 export class PrismaAlertRepository implements AlertRepository {
   async create(input: CreateAlertDto) {
     const asset = await prisma.asset.findUniqueOrThrow({ where: { assetId: input.assetId }, select: { id: true } });
-    const row = await prisma.alert.create({ data: { ...input, assetId: asset.id, fingerprint: `manual:${input.assetId}:${crypto.randomUUID()}`, metric: "health_trend" }, include: includeAsset });
+    const row = await prisma.alert.create({ data: { ...input, assetId: asset.id, fingerprint: `manual:${input.assetId}:${crypto.randomUUID()}`, metric: "overall_health" }, include: includeAsset });
     return toDomain(row);
   }
   async list(filters: AlertListQueryDto) {

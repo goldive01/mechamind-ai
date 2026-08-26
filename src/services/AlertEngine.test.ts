@@ -4,10 +4,10 @@ import { AlertEngine } from "@/services/AlertEngine";
 describe("AlertEngine", () => {
   it("evaluates every monitored sensor metric and health decline", () => {
     const findings = new AlertEngine().evaluate({ assetId: "MM-000001", reading: { temperature: 121, vibration: 13, voltage: 350, current: 110, humidity: 75 }, health: { trendDelta: -8, failureProbability: 50, overallHealth: 55, safetyScore: 60 } });
-    expect(findings.map((finding) => finding.metric)).toEqual(["temperature", "vibration", "current", "humidity", "voltage", "health_trend", "failure_probability"]);
+    expect(findings.map((finding) => finding.metric)).toEqual(["temperature", "vibration", "current", "humidity", "voltage", "overall_health", "failure_probability"]);
     expect(findings.find((finding) => finding.metric === "temperature")?.severity).toBe("Critical");
     expect(findings.find((finding) => finding.metric === "vibration")?.severity).toBe("High");
-    expect(findings.find((finding) => finding.metric === "health_trend")?.severity).toBe("Medium");
+    expect(findings.find((finding) => finding.metric === "overall_health")?.severity).toBe("Medium");
     expect(findings.find((finding) => finding.metric === "failure_probability")?.severity).toBe("Medium");
   });
 

@@ -5,10 +5,10 @@ const upper = (low: number, medium: number, high: number, critical: number): Rul
   { severity: "Critical", threshold: critical, matches: (v) => v >= critical }, { severity: "High", threshold: high, matches: (v) => v >= high },
   { severity: "Medium", threshold: medium, matches: (v) => v >= medium }, { severity: "Low", threshold: low, matches: (v) => v >= low },
 ];
-const rules: Record<Exclude<AlertMetric, "voltage" | "health_trend" | "failure_probability">, Rule[]> = {
+const rules: Record<Exclude<AlertMetric, "voltage" | "overall_health" | "failure_probability">, Rule[]> = {
   temperature: upper(70, 85, 100, 120), vibration: upper(4, 7, 12, 18), current: upper(70, 100, 150, 200), humidity: upper(70, 80, 90, 97),
 };
-const labels: Record<AlertMetric, string> = { temperature: "Temperature", vibration: "Vibration", voltage: "Voltage", current: "Current", humidity: "Humidity", health_trend: "Health trend", failure_probability: "Failure probability" };
+const labels: Record<AlertMetric, string> = { temperature: "Temperature", vibration: "Vibration", voltage: "Voltage", current: "Current", humidity: "Humidity", overall_health: "Overall health", failure_probability: "Failure probability" };
 
 function voltageRule(value: number): { severity: AlertSeverity; threshold: number } | null {
   const deviation = value > 230 ? value - 230 : 230 - value;
@@ -25,15 +25,18 @@ export class AlertEngine {
     }
     const voltage = input.reading?.voltage;
     if (voltage !== null && voltage !== undefined) { const rule = voltageRule(voltage); if (rule) findings.push(this.finding(input.assetId, "voltage", rule.severity, voltage, rule.threshold, "Sensor")); }
-    const decline = input.health ? Math.max(0, -input.health.trendDelta) : 0;
-    const healthRule = upper(3, 7, 12, 20).find((rule) => rule.matches(decline));
-    if (healthRule) findings.push(this.finding(input.assetId, "health_trend", healthRule.severity, input.health!.trendDelta, -healthRule.threshold, input.source ?? "Health"));
+    const overallHealth = input.health?.overallHealth;
+    const healthRule = overallHealth === undefined || overallHealth === null ? undefined : [
+      { severity: "Critical" as const, threshold: 25 }, { severity: "High" as const, threshold: 40 },
+      { severity: "Medium" as const, threshold: 55 }, { severity: "Low" as const, threshold: 70 },
+    ].find((rule) => overallHealth <= rule.threshold);
+    if (healthRule) findings.push(this.finding(input.assetId, "overall_health", healthRule.severity, overallHealth!, healthRule.threshold, input.source ?? "Health"));
     const probability = input.health?.failureProbability;
     const probabilityRule = probability === undefined || probability === null ? undefined : upper(20, 40, 65, 80).find((rule) => rule.matches(probability));
     if (probabilityRule) findings.push(this.finding(input.assetId, "failure_probability", probabilityRule.severity, probability!, probabilityRule.threshold, input.source ?? "Health"));
     return findings.map((finding) => finding.source === "Sensor" ? { ...finding, triggerType: "Sensor Reading", triggerId: input.sensorTriggerId ?? null } : { ...finding, triggerType: input.triggerType ?? finding.source, triggerId: input.triggerId ?? null });
   }
   private finding(assetId: string, metric: AlertMetric, severity: AlertSeverity, observedValue: number, thresholdValue: number, source: AlertFinding["source"]): AlertFinding {
-    return { assetId, fingerprint: `${assetId}:${metric}`, severity, category: metric === "health_trend" || metric === "failure_probability" ? "Predictive Health" : "Sensor Telemetry", source, metric, title: `${severity} ${labels[metric].toLowerCase()} alert`, triggerType: null, triggerId: null, observedValue, thresholdValue };
+    return { assetId, fingerprint: `${assetId}:${metric}`, severity, category: metric === "overall_health" || metric === "failure_probability" ? "Predictive Health" : "Sensor Telemetry", source, metric, title: `${severity} ${labels[metric].toLowerCase()} alert`, triggerType: null, triggerId: null, observedValue, thresholdValue };
   }
 }

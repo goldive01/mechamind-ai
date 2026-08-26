@@ -31,11 +31,11 @@ describe("AlertService", () => {
   it("resolves prior active alerts when conditions normalize", async () => {
     const alerts = repository(null);
     await new AlertService(alerts, new AlertEngine(), new HealthEngine(), new RecommendationEngine(), { explain: vi.fn() }, new NotificationService([])).evaluateAsset("MM-000001", "Health Recalculation");
-    expect(alerts.resolveMissing).toHaveBeenCalledWith("MM-000001", ["MM-000001:failure_probability"], "Alert Engine");
+    expect(alerts.resolveMissing).toHaveBeenCalledWith("MM-000001", ["MM-000001:overall_health", "MM-000001:failure_probability"], "Alert Engine");
   });
 
   it("enforces lifecycle rules and logs acknowledgements and resolutions", async () => {
-    const alerts = repository(null); const open = makeAlert({ assetId: "MM-000001", fingerprint: "manual:1", severity: "High", category: "Engineering", source: "Health", metric: "health_trend", title: "Bearing risk", triggerType: null, triggerId: null, observedValue: 50, thresholdValue: 40, description: "Risk increased", recommendation: "Inspect bearing" });
+    const alerts = repository(null); const open = makeAlert({ assetId: "MM-000001", fingerprint: "manual:1", severity: "High", category: "Engineering", source: "Health", metric: "overall_health", title: "Bearing risk", triggerType: null, triggerId: null, observedValue: 50, thresholdValue: 40, description: "Risk increased", recommendation: "Inspect bearing" });
     vi.mocked(alerts.findById).mockResolvedValue(open);
     vi.mocked(alerts.acknowledge).mockResolvedValue({ ...open, status: "Acknowledged", acknowledgedAt: now });
     vi.mocked(alerts.resolve).mockResolvedValue({ ...open, status: "Resolved", resolvedAt: now });
