@@ -1,0 +1,16 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { assignWorkOrder, changeWorkOrderStatus } from "@/app/dashboard/work-orders/actions";
+import { Card } from "@/components/Card";
+import { PageHeader } from "@/components/PageHeader";
+import { allowedWorkOrderStatuses } from "@/services/WorkOrderService";
+import { createWorkOrderService } from "@/services/workOrderFactory";
+
+export const dynamic = "force-dynamic";
+const date = (value: Date | null) => value?.toLocaleString("en-GB") ?? "Not set";
+export default async function WorkOrderDetailPage({ params }: { params: Promise<{ workOrderId: string }> }) {
+  const { workOrderId } = await params; const order = await createWorkOrderService().get(workOrderId); if (!order) notFound(); const next = allowedWorkOrderStatuses(order.status);
+  return <div className="space-y-6"><Link href="/dashboard/work-orders" className="text-sm font-medium text-cyan-600">← Work orders</Link><PageHeader title={order.title} description={`${order.assetId} · ${order.assetName}`} />
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"><main className="space-y-6"><Card title="Work order details" description={order.description}><dl className="grid gap-4 sm:grid-cols-2">{[["Priority",order.priority],["Status",order.status],["Assigned to",order.assignedTo ?? "Unassigned"],["Scheduled start",date(order.scheduledStart)],["Due date",date(order.dueDate)],["Completed",date(order.completedAt)]].map(([label,value]) => <div key={label}><dt className="text-xs uppercase tracking-[0.16em] text-slate-500">{label}</dt><dd className="mt-1 text-sm font-medium">{value}</dd></div>)}</dl></Card><Card title="Related asset" description="Open the asset record or its engineering timeline."><div className="flex flex-wrap gap-3"><Link href={`/dashboard/assets/${order.assetId}`} className="text-sm font-medium text-cyan-600">Asset details</Link><Link href={`/dashboard/assets/${order.assetId}/timeline`} className="text-sm font-medium text-cyan-600">Engineering timeline</Link></div></Card></main>
+    <aside className="space-y-6"><Card title="Assignment" description="Assign this work order to an engineer or team."><form action={assignWorkOrder} className="space-y-3"><input type="hidden" name="workOrderId" value={order.id}/><input name="assignedTo" defaultValue={order.assignedTo ?? ""} placeholder="Engineer or team" className="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-700"/><button className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-medium text-white">Update assignment</button></form></Card><Card title="Status workflow" description={next.length ? "Select a valid next lifecycle state." : "This work order is in a terminal state."}>{next.length ? <form action={changeWorkOrderStatus} className="space-y-3"><input type="hidden" name="workOrderId" value={order.id}/><select name="status" className="w-full rounded-xl border border-slate-300 bg-transparent px-3 py-2 text-sm dark:border-slate-700">{next.map((status) => <option key={status}>{status}</option>)}</select><button className="rounded-full bg-cyan-500 px-4 py-2 text-sm font-medium text-white">Change status</button></form> : null}</Card></aside></div></div>;
+}

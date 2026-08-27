@@ -1,0 +1,3 @@
+import Link from "next/link";
+
+export default function MobileLayout({ children }: { children: React.ReactNode }) { return <div className="mx-auto min-h-screen max-w-xl bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100"><header className="sticky top-0 z-20 border-b border-slate-200 bg-slate-50/95 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/95"><div className="flex items-center justify-between"><Link href="/mobile" className="font-semibold text-cyan-600">MechaMind Field</Link><nav className="flex gap-4 text-sm"><Link href="/mobile/work-orders">Work orders</Link><Link href="/mobile/scan">Scan</Link></nav></div></header><main className="p-4 pb-12">{children}</main></div>; }

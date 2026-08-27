@@ -46,6 +46,270 @@ model Asset {
   aiReports     AIReport[]
   sensorDevices SensorDevice[]
   alerts        Alert[]
+  workOrders    WorkOrder[]
+  stockMovements StockMovement[]
+}
+
+model WorkOrder {
+  id                 String              @id @default(cuid())
+  assetId            String
+  asset              Asset               @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  title              String
+  description        String
+  priority           String              @default("Medium")
+  status             String              @default("Draft")
+  assignedTo         String?
+  assignedEngineerId String?
+  assignedEngineer   Engineer?           @relation(fields: [assignedEngineerId], references: [id], onDelete: SetNull)
+  teamId             String?
+  team               Team?               @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  scheduledStart     DateTime?
+  dueDate            DateTime?
+  completedAt        DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  signatures         DigitalSignature[]
+  evidence           WorkOrderEvidence[]
+  parts              WorkOrderPart[]
+
+  @@index([status, priority, scheduledStart])
+  @@index([assetId, updatedAt])
+  @@index([assignedTo, status])
+  @@index([assignedEngineerId, status])
+  @@index([teamId, status])
+}
+
+model Warehouse {
+  id             String          @id @default(cuid())
+  code           String          @unique
+  name           String
+  location       String?
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  inventoryItems InventoryItem[]
+  stockMovements StockMovement[]
+  workOrderParts WorkOrderPart[]
+}
+
+model Supplier {
+  id          String      @id @default(cuid())
+  code        String      @unique
+  name        String
+  contactName String?
+  email       String?
+  phone       String?
+  leadTimeDays Int        @default(0)
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  spareParts  SparePart[]
+}
+
+model SparePart {
+  id             String          @id @default(cuid())
+  sku            String          @unique
+  name           String
+  description    String?
+  category       String
+  unit           String          @default("each")
+  unitCost        Float           @default(0)
+  reorderPoint   Int             @default(0)
+  reorderQuantity Int            @default(1)
+  supplierId     String?
+  supplier       Supplier?       @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  inventoryItems InventoryItem[]
+  stockMovements StockMovement[]
+  workOrderParts WorkOrderPart[]
+
+  @@index([category, name])
+  @@index([supplierId])
+}
+
+model InventoryItem {
+  id          String    @id @default(cuid())
+  warehouseId String
+  sparePartId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  sparePart   SparePart @relation(fields: [sparePartId], references: [id], onDelete: Cascade)
+  quantity    Int       @default(0)
+  reserved    Int       @default(0)
+  binLocation String?
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([warehouseId, sparePartId])
+  @@index([sparePartId, quantity])
+}
+
+model WorkOrderPart {
+  id          String    @id @default(cuid())
+  workOrderId String
+  sparePartId String
+  warehouseId String
+  quantity    Int
+  deductedAt  DateTime?
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  sparePart   SparePart @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+
+  @@unique([workOrderId, sparePartId, warehouseId])
+  @@index([workOrderId, deductedAt])
+}
+
+model StockMovement {
+  id          String    @id @default(cuid())
+  warehouseId String
+  sparePartId String
+  assetId     String?
+  workOrderId String?
+  type        String
+  quantity    Int
+  balanceAfter Int
+  reason      String
+  reference   String?
+  createdAt   DateTime  @default(now())
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  sparePart   SparePart @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
+  asset       Asset?    @relation(fields: [assetId], references: [id], onDelete: SetNull)
+
+  @@index([warehouseId, sparePartId, createdAt])
+  @@index([workOrderId, createdAt])
+  @@index([assetId, createdAt])
+}
+
+model Engineer {
+  id                      String                 @id @default(cuid())
+  employeeNumber          String                 @unique
+  name                    String
+  email                   String                 @unique
+  active                  Boolean                @default(true)
+  maxConcurrentWorkOrders Int                    @default(5)
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  skills                  EngineerSkill[]
+  certifications          Certification[]
+  availability            EngineerAvailability[]
+  teams                   TeamMembership[]
+  workOrders              WorkOrder[]
+}
+
+model Team {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  active      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  members     TeamMembership[]
+  workOrders  WorkOrder[]
+}
+
+model Skill {
+  id        String          @id @default(cuid())
+  name      String          @unique
+  category  String
+  createdAt DateTime        @default(now())
+  engineers EngineerSkill[]
+}
+
+model EngineerSkill {
+  engineerId      String
+  skillId         String
+  proficiency     Int      @default(1)
+  yearsExperience Float    @default(0)
+  engineer        Engineer @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+  skill           Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@id([engineerId, skillId])
+  @@index([skillId, proficiency])
+}
+
+model Certification {
+  id             String    @id @default(cuid())
+  engineerId     String
+  engineer       Engineer  @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+  name           String
+  issuer         String
+  credentialCode String?
+  issuedAt       DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([engineerId, expiresAt])
+}
+
+model EngineerAvailability {
+  id         String   @id @default(cuid())
+  engineerId String
+  engineer   Engineer @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+  startsAt   DateTime
+  endsAt     DateTime
+  status     String   @default("Available")
+  note       String?
+
+  @@index([engineerId, startsAt, endsAt])
+  @@index([status, startsAt, endsAt])
+}
+
+model TeamMembership {
+  teamId     String
+  engineerId String
+  role       String   @default("Member")
+  team       Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  engineer   Engineer @relation(fields: [engineerId], references: [id], onDelete: Cascade)
+
+  @@id([teamId, engineerId])
+  @@index([engineerId])
+}
+
+model DigitalSignature {
+  id            String    @id @default(cuid())
+  workOrderId   String
+  workOrder     WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  signerName    String
+  signatureData String
+  latitude      Float?
+  longitude     Float?
+  signedAt      DateTime  @default(now())
+
+  @@index([workOrderId, signedAt])
+}
+
+model WorkOrderEvidence {
+  id          String    @id @default(cuid())
+  workOrderId String
+  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  type        String
+  uri         String?
+  note        String?
+  latitude    Float?
+  longitude   Float?
+  capturedAt  DateTime  @default(now())
+
+  @@index([workOrderId, capturedAt])
+}
+
+model SyncQueueItem {
+  id            String    @id
+  entity        String
+  entityId      String
+  action        String
+  payloadJson   String
+  baseVersion   String?
+  status        String    @default("Pending")
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  lastError     String?
+  conflictJson  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  syncedAt      DateTime?
+
+  @@index([status, nextAttemptAt])
+  @@index([entity, entityId, createdAt])
 }
 
 model Alert {

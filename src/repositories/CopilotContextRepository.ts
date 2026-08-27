@@ -9,6 +9,7 @@ export interface CopilotContextRecord {
   };
   inspections: Array<{ id: string; inspectionDate: Date; overallCondition: string; notes: string | null; aiReport: { diagnosis: string; recommendations: string; riskLevel: string } | null }>;
   alerts: Array<{ severity: string; source: string; title: string; recommendation: string }>;
+  workOrders: Array<{ id: string; title: string; description: string; priority: string; status: string; assignedTo: string | null; scheduledStart: Date | null; dueDate: Date | null; assignedEngineer?: { name: string; skills: Array<{ skill: { name: string } }> } | null; team?: { name: string } | null }>;
 }
 
 export interface CopilotContextRepository {

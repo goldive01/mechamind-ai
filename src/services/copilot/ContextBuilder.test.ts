@@ -12,6 +12,7 @@ describe("ContextBuilder", () => {
           maintenanceRecords: [], sensorDevices: [{ deviceName: "Monitor", readings: [{ recordedAt: new Date("2026-01-03Z"), temperature: 120, humidity: 95, vibration: 20, voltage: 600, current: 150 }] }] },
         inspections: [{ id: "i1", inspectionDate: new Date("2026-01-02Z"), overallCondition: "Poor", notes: "Bearing failure hazard", aiReport: { diagnosis: "Bearing fault", recommendations: "Stop and inspect", riskLevel: "High" } }],
         alerts: [{ severity: "High", source: "Sensor", title: "High vibration alert", recommendation: "Inspect bearings" }],
+        workOrders: [{ id: "w1", title: "Replace bearing", description: "Replace worn bearing", priority: "High", status: "Scheduled", assignedTo: "Engineer", scheduledStart: new Date("2026-01-04Z"), dueDate: null }],
       }],
     };
     const [context] = await new ContextBuilder(repository).build(["MM-000001"]);
@@ -19,5 +20,6 @@ describe("ContextBuilder", () => {
     expect(context.health.failureProbability).toBeGreaterThan(0);
     expect(context.alerts.map((alert) => alert.source)).toEqual(expect.arrayContaining(["health", "sensor", "inspection"]));
     expect(context.alerts).toContainEqual(expect.objectContaining({ source: "alert", message: "High vibration alert", recommendation: "Inspect bearings" }));
+    expect(context.workOrders).toContainEqual(expect.objectContaining({ id: "w1", status: "Scheduled", scheduledStart: "2026-01-04T00:00:00.000Z" }));
   });
 });

@@ -9,5 +9,5 @@ export default async function AssetTimelinePage({ params }: PageProps<"/dashboar
   const { assetId } = await params;
   const timeline = await createTimelineService().build(assetId);
   if (!timeline) notFound();
-  return <div className="space-y-6"><Link href={`/dashboard/assets/${assetId}`} className="text-sm font-medium text-cyan-600 hover:text-cyan-500">← Asset details</Link><PageHeader title={`${timeline.assetId} · Engineering timeline`} description={`Inspections, telemetry, health, alerts, recommendations, and maintenance for ${timeline.assetName}.`} /><AssetTimeline timeline={timeline} /></div>;
+  return <div className="space-y-6"><Link href={`/dashboard/assets/${assetId}`} className="text-sm font-medium text-cyan-600 hover:text-cyan-500">← Asset details</Link><PageHeader title={`${timeline.assetId} · Engineering timeline`} description={`Inspections, telemetry, health, alerts, recommendations, maintenance, and work orders for ${timeline.assetName}.`} /><AssetTimeline timeline={timeline} /></div>;
 }

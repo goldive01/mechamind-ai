@@ -8,12 +8,13 @@ const repository: TimelineRepository = { getAssetTimelineData: vi.fn().mockResol
   readings: [{ id: "r1", recordedAt: new Date("2026-01-04Z"), temperature: 120, humidity: 90, vibration: 18, voltage: 230, current: 80 }],
   maintenance: [{ id: "m1", maintenanceDate: new Date("2026-01-03Z"), maintenanceType: "Bearing inspection", notes: "Wear confirmed", performedBy: "Engineer" }],
   alerts: [{ id: "a1", severity: "High", status: "Open", title: "High vibration alert", description: "Vibration exceeded threshold", recommendation: "Inspect bearings", createdAt: new Date("2026-01-05Z"), updatedAt: new Date("2026-01-05Z") }],
+  workOrders: [{ id: "w1", title: "Replace bearing", description: "Replace damaged drive bearing", priority: "High", status: "Scheduled", assignedTo: "Engineer", scheduledStart: new Date("2026-01-06Z"), dueDate: new Date("2026-01-07Z"), completedAt: null, createdAt: new Date("2026-01-05Z"), updatedAt: new Date("2026-01-06Z") }],
 }) };
 
 describe("TimelineService", () => {
   it("aggregates every engineering event type in reverse chronological order", async () => {
     const timeline = await new TimelineService(repository).build("MM-000001");
-    expect(new Set(timeline?.events.map(({ type }) => type))).toEqual(new Set(["Inspection", "Sensor Reading", "Health", "Alert", "Recommendation", "Maintenance"]));
+    expect(new Set(timeline?.events.map(({ type }) => type))).toEqual(new Set(["Inspection", "Sensor Reading", "Health", "Alert", "Recommendation", "Maintenance", "Work Order"]));
     expect(timeline?.events.map(({ occurredAt }) => occurredAt.getTime())).toEqual(timeline?.events.map(({ occurredAt }) => occurredAt.getTime()).toSorted((a, b) => b - a));
     expect(timeline?.trendExplanation).toContain("failure probability");
   });

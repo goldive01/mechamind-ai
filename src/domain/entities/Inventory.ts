@@ -1,0 +1,7 @@
+export type StockMovementType = "Receipt" | "Issue" | "Adjustment" | "Return";
+export interface Warehouse { id: string; code: string; name: string; location: string | null; active: boolean; itemCount: number; totalQuantity: number }
+export interface Supplier { id: string; code: string; name: string; contactName: string | null; email: string | null; phone: string | null; leadTimeDays: number; active: boolean }
+export interface SparePart { id: string; sku: string; name: string; description: string | null; category: string; unit: string; unitCost: number; reorderPoint: number; reorderQuantity: number; supplier: { id: string; name: string } | null; totalQuantity: number; availableQuantity: number; lowStock: boolean }
+export interface InventoryItem { id: string; warehouseId: string; warehouseCode: string; warehouseName: string; sparePartId: string; sku: string; sparePartName: string; quantity: number; reserved: number; available: number; binLocation: string | null; reorderPoint: number; lowStock: boolean }
+export interface StockMovement { id: string; warehouseId: string; sparePartId: string; workOrderId: string | null; type: StockMovementType; quantity: number; balanceAfter: number; reason: string; reference: string | null; createdAt: Date }
+export interface InventoryRecommendation { sparePartId: string; sku: string; name: string; availableQuantity: number; suggestedOrderQuantity: number; supplierName: string | null; reason: string }

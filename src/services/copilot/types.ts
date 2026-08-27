@@ -53,6 +53,7 @@ export interface CopilotAssetContext {
     drivers: string[];
   };
   alerts: CopilotAlert[];
+  workOrders: Array<{ id: string; title: string; description: string; priority: string; status: string; assignedTo: string | null; scheduledStart: string | null; dueDate: string | null; assignedEngineer?: { name: string; skills: string[] } | null; team?: string | null }>;
 }
 
 export interface CopilotPrompt {

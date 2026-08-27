@@ -19,6 +19,7 @@ export class PrismaCopilotContextRepository implements CopilotContextRepository 
         } },
         inspections: { orderBy: { inspectionDate: "desc" }, take: 8, select: { id: true, inspectionDate: true, overallCondition: true, notes: true, aiReport: { select: { diagnosis: true, recommendations: true, riskLevel: true } } } },
         alerts: { where: { status: { not: "Resolved" } }, orderBy: { updatedAt: "desc" }, take: 8, select: { severity: true, source: true, title: true, recommendation: true } },
+        workOrders: { where: { status: { notIn: ["Completed", "Cancelled"] } }, orderBy: { updatedAt: "desc" }, take: 8, select: { id: true, title: true, description: true, priority: true, status: true, assignedTo: true, scheduledStart: true, dueDate: true, assignedEngineer: { select: { name: true, skills: { select: { skill: { select: { name: true } } } } } }, team: { select: { name: true } } } },
       },
       orderBy: { assetId: "asc" },
     });

@@ -1,6 +1,7 @@
 # MechaMind AI Roadmap
 
-## Version 1.0 ✅
+## Version 1.0 - Foundation (Complete)
+
 - AI Equipment Scanner
 - Asset Registry
 - Inspection Engine
@@ -9,66 +10,51 @@
 - Predictive Maintenance
 - Live IoT Platform
 
-## Version 1.1 ✅
+## Version 1.1 - Architecture (Complete)
+
 - Repository Pattern
 - Service Layer
 - Domain Layer
 - DTO Validation
 - Health Engine
-- Logger
+- Structured Logging
 - Unit Tests
 
-## Version 1.2 ✅
-- AI Copilot
+## Version 1.2 - Engineering Copilot (Complete)
+
 - Context Builder
 - Prompt Builder
 - Streaming Chat
-- Tool Registry
-- Tool Executor
+- Tool Registry and Executor
 - Conversation History
+- Controlled State-Changing Actions
 
-## Version 1.3
+## Version 1.3 - Engineering Intelligence (Complete)
 
-### ✅ Capability 1
 - Alert Domain Foundation
-
-### ✅ Capability 2
 - Automatic Alert Evaluation
-
-### ✅ Capability 3
-- Alert Dashboard
-
-### ✅ Capability 4
+- Alert Dashboard and Lifecycle Actions
 - AI Recommendation Engine
-- Deterministic Engineering Rules
-- Optional AI Enhancement
-- Alert, Copilot, and Alert Details Integration
-
-### ✅ Capability 5
+- Deterministic Engineering Rule Engine
+- Optional AI Recommendation Enhancement
 - Engineering Timeline Intelligence
-- Asset Timeline
-- Trend Explanation
-- Optional AI Summary
+- Trend Explanations and Optional AI Summaries
+- Intelligent Notification and Escalation Engine
+- Severity-Based Notification Queue
+- Email, Push, SMS, Teams, Slack, and Webhook Provider Abstractions
 
-### ✅ Capability 6
-- Intelligent Notification & Escalation Engine
-- Severity-based Notification Queue
-- Email, Push, SMS, Teams, Slack, and Webhook Providers
+## Version 1.4 - Connected Operations
 
-## Future Versions
-
-### Version 1.4
-- Digital Twin
-- 3D Asset View
-- Live Sensor Overlay
-
-### Version 1.5
-- Mobile App
-- QR Code Scanning
-- Offline Inspections
-
-### Version 2.0
-- Multi-tenant Organizations
+- Field Engineer Mobile
 - Work Orders
 - Inventory
-- Enterprise Deployment
+- Authentication
+- Multi-Organisation
+- Cloud Deployment
+
+## Future Direction
+
+- Digital twins and 3D asset visualization
+- Live sensor overlays
+- Offline inspections and synchronization
+- Enterprise integrations and durable notification delivery

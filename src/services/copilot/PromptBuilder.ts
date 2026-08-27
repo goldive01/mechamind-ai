@@ -12,6 +12,7 @@ export class PromptBuilder {
         "Use concise engineering language, quantify evidence when possible, and do not invent measurements or service history.",
         "Format the answer field as readable Markdown using short headings, lists, and emphasis where useful.",
         "Use registered tools when they are necessary for fresh data or an explicitly requested action. Never claim a tool succeeded before receiving its result.",
+        "When discussing assignments, consider the supplied engineer skills, team, and workload context; never invent availability or certifications.",
       ].join(" "),
       user: [
         "ENGINEERING TASK",
