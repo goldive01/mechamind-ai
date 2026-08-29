@@ -72,3 +72,7 @@ The v1.3 alert domain foundation defines persistence-independent severity, categ
 ### Engineering memory
 
 Engineering Memory sits behind `MemoryRepository`. `MemoryIngestionService` converts operational outcomes into validated, tenant-scoped memories, while search and deterministic ranking combine recency, lexical similarity, confidence, successful outcome, and frequency. Every Copilot provider request retrieves ranked experience and injects stable `[Memory:<id>]` citations into prompt context.
+
+### Engineering knowledge graph
+
+`KnowledgeBuilder` deterministically converts each normalized Engineering Memory into categorised nodes, directed edges, and supporting facts. `KnowledgeGraph` persists validated graph mutations through `KnowledgeRepository`, while `KnowledgeSearch` and `KnowledgeEngine` provide organisation-scoped text search and bounded traversal. Copilot retrieves both ranked memories and their related graph context, using stable `[Knowledge:<id>]` node citations.

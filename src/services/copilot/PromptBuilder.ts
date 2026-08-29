@@ -1,7 +1,7 @@
-import type { CopilotAssetContext, CopilotMemoryContext, CopilotMessage, CopilotPrompt } from "@/services/copilot/types";
+import type { CopilotAssetContext, CopilotKnowledgeContext, CopilotMemoryContext, CopilotMessage, CopilotPrompt } from "@/services/copilot/types";
 
 export class PromptBuilder {
-  build(messages: CopilotMessage[], context: CopilotAssetContext[], memories: CopilotMemoryContext[] = []): CopilotPrompt {
+  build(messages: CopilotMessage[], context: CopilotAssetContext[], memories: CopilotMemoryContext[] = [], knowledge: CopilotKnowledgeContext = { nodes: [], edges: [], facts: [] }): CopilotPrompt {
     const conversation = messages.map((message) => `${message.role.toUpperCase()}: ${message.content}`).join("\n\n");
     return {
       system: [
@@ -16,6 +16,7 @@ export class PromptBuilder {
         "When recommending maintenance, use allocated-part availability and low-stock signals from inventory context; distinguish stocked parts from items that require procurement.",
         "Respect the access permissions supplied in context. Do not disclose unavailable data or propose tools the user is not permitted to run.",
         "Previous engineering experience is supporting evidence, not a substitute for current measurements. Cite any used memory with its exact [Memory:<id>] citation.",
+        "Treat knowledge-graph relationships and facts as supporting evidence. Cite any used node with its exact [Knowledge:<id>] citation.",
       ].join(" "),
       user: [
         "ENGINEERING TASK",
@@ -29,8 +30,11 @@ export class PromptBuilder {
         "\nENGINEERING MEMORY (ranked JSON)\n<memory>",
         JSON.stringify(memories),
         "</memory>",
+        "\nENGINEERING KNOWLEDGE GRAPH (JSON)\n<knowledge>",
+        JSON.stringify(knowledge),
+        "</knowledge>",
         "\nAVAILABLE TOOLS: searchAssets, getAssetHealth, compareAssets, createMaintenance, generateInspectionReport, calculateHealth. Put requested calls in toolCalls with a unique id, exact tool name, and argumentsJson containing a JSON-encoded arguments object. createMaintenance requires user confirmation. If tool result data is present in the conversation, synthesize it and return toolCalls as an empty array.",
-        "\nReturn the required structured response. Treat alerts as priority signals, but verify them against their source data. When a retrieved memory influences the answer, include its exact citation in the answer and add a memory evidence entry when it has an assetId. Evidence entries must reference only asset IDs present in the context. If no assets were selected, provide general guidance and leave evidence empty.",
+        "\nReturn the required structured response. Treat alerts as priority signals, but verify them against their source data. Cite retrieved memories and knowledge nodes when they influence the answer. Evidence entries must reference only asset IDs present in the context. If no assets were selected, provide general guidance and leave evidence empty.",
       ].join("\n"),
     };
   }

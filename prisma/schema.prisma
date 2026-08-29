@@ -49,6 +49,10 @@ model Organisation {
   assets              Asset[]
   conversations       CopilotConversation[]
   engineeringMemories EngineeringMemory[]
+  knowledgeCategories KnowledgeCategory[]
+  knowledgeNodes      KnowledgeNode[]
+  knowledgeEdges      KnowledgeEdge[]
+  knowledgeFacts      KnowledgeFact[]
 
   @@index([active, name])
 }
@@ -82,11 +86,93 @@ model EngineeringMemory {
   tags            MemoryTag[]
   outgoing        MemoryRelationship[] @relation("MemoryRelationshipFrom")
   incoming        MemoryRelationship[] @relation("MemoryRelationshipTo")
+  knowledgeEdges  KnowledgeEdge[]
+  knowledgeFacts  KnowledgeFact[]
 
   @@unique([organisationId, externalKey])
   @@index([organisationId, assetId, occurredAt])
   @@index([organisationId, sourceType, occurredAt])
   @@index([organisationId, engineerId, partId, sensorId])
+}
+
+model KnowledgeCategory {
+  id             String          @id @default(cuid())
+  organisationId String
+  organisation   Organisation    @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  key            String
+  name           String
+  description    String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  nodes          KnowledgeNode[]
+
+  @@unique([organisationId, key])
+  @@index([organisationId, name])
+}
+
+model KnowledgeNode {
+  id              String             @id @default(cuid())
+  organisationId  String
+  organisation    Organisation       @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  categoryId      String?
+  category        KnowledgeCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  nodeType        String
+  externalKey     String
+  label           String
+  description     String?
+  confidence      Float              @default(0.7)
+  occurrenceCount Int                @default(1)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  outgoing        KnowledgeEdge[]    @relation("KnowledgeEdgeFrom")
+  incoming        KnowledgeEdge[]    @relation("KnowledgeEdgeTo")
+  facts           KnowledgeFact[]
+
+  @@unique([organisationId, nodeType, externalKey])
+  @@index([organisationId, nodeType, label])
+  @@index([categoryId])
+}
+
+model KnowledgeEdge {
+  id              String             @id @default(cuid())
+  organisationId  String
+  organisation    Organisation       @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  fromNodeId      String
+  toNodeId        String
+  relationship    String
+  confidence      Float              @default(0.7)
+  occurrenceCount Int                @default(1)
+  sourceMemoryId  String?
+  sourceMemory    EngineeringMemory? @relation(fields: [sourceMemoryId], references: [id], onDelete: SetNull)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  fromNode        KnowledgeNode      @relation("KnowledgeEdgeFrom", fields: [fromNodeId], references: [id], onDelete: Cascade)
+  toNode          KnowledgeNode      @relation("KnowledgeEdgeTo", fields: [toNodeId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, fromNodeId, toNodeId, relationship])
+  @@index([organisationId, relationship])
+  @@index([toNodeId])
+  @@index([sourceMemoryId])
+}
+
+model KnowledgeFact {
+  id              String             @id @default(cuid())
+  organisationId  String
+  organisation    Organisation       @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  nodeId          String
+  node            KnowledgeNode      @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+  predicate       String
+  value           String
+  confidence      Float              @default(0.7)
+  occurrenceCount Int                @default(1)
+  sourceMemoryId  String?
+  sourceMemory    EngineeringMemory? @relation(fields: [sourceMemoryId], references: [id], onDelete: SetNull)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@unique([organisationId, nodeId, predicate, value])
+  @@index([organisationId, predicate, value])
+  @@index([sourceMemoryId])
 }
 
 model MemoryEvent {

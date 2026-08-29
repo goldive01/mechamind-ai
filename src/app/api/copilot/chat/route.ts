@@ -18,6 +18,7 @@ import { cookies } from "next/headers";
 import { createOrganisationServices } from "@/services/organisationFactory";
 import type { ToolPermission } from "@/services/copilot/tools/types";
 import { createMemoryEngine } from "@/services/memoryFactory";
+import { createKnowledgeEngine } from "@/services/knowledgeFactory";
 
 const logger = createLogger("api.copilot.chat");
 const operations = new PrismaAssetOperationsRepository();
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
   const permissionCodes = auth.session.user.role?.permissions.map((permission) => permission.code) ?? [];
   const toolPermissions = permissionCodes.filter((permission): permission is ToolPermission => ["assets:read", "maintenance:write", "reports:generate"].includes(permission));
   const access = { userId: auth.session.user.id, role: auth.session.user.role?.name ?? null, permissions: permissionCodes, organisationId: organisation.id, organisationName: organisation.name };
-  const service = new ConversationService(new PrismaConversationRepository(organisation.id), new CopilotService(new ContextBuilder(new PrismaCopilotContextRepository(organisation.id)), undefined, undefined, createMemoryEngine()), new ToolExecutor(toolRegistry), { id: auth.session.user.id, permissions: toolPermissions }, access);
+  const service = new ConversationService(new PrismaConversationRepository(organisation.id), new CopilotService(new ContextBuilder(new PrismaCopilotContextRepository(organisation.id)), undefined, undefined, createMemoryEngine(), createKnowledgeEngine()), new ToolExecutor(toolRegistry), { id: auth.session.user.id, permissions: toolPermissions }, access);
   try {
     const input = copilotRequestDtoSchema.parse(await request.json());
     if ("action" in input && input.action === "load") return apiSuccess({ conversation: await service.load(input.conversationId) });

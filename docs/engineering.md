@@ -238,3 +238,7 @@ Authentication changes must keep raw session tokens out of persistence and logs,
 ## Engineering Memory operations
 
 Operational services capture inspections, recommendations, work-order changes, completed repairs, engineer assignments, inventory movements, sensor observations, alerts, and timeline events through `MemoryIngestor`. Capture failures are isolated and logged so they do not roll back successful workflows. Copilot treats recalled experience as supporting evidence and cites used records with `[Memory:<id>]`.
+
+## Engineering Knowledge Graph operations
+
+Every successful memory upsert invokes `KnowledgeBuilder`, which deterministically derives validated categories, nodes, relationships, and facts. Graph identity is organisation-scoped, repeated evidence is aggregated, and traversal is bounded by validated depth and result limits. Copilot receives relevant nodes, connected edges, and facts alongside ranked memories and cites used nodes with `[Knowledge:<id>]`.

@@ -18,6 +18,14 @@ describe("Copilot prompt and response boundaries", () => {
     expect(prompt.system).toContain("Cite any used memory");
   });
 
+  it("injects retrieved knowledge nodes, relationships, and facts", () => {
+    const prompt = new PromptBuilder().build([{ role: "user", content: "Why does this bearing fail?" }], [], [], { nodes: [{ id: "n1", citation: "[Knowledge:n1]", type: "Failure", key: "bearing-failure", label: "Bearing failure", confidence: 0.9 }], edges: [{ id: "e1", fromNodeId: "n2", toNodeId: "n1", relationship: "EXPERIENCED_FAILURE", confidence: 0.85 }], facts: [{ id: "f1", nodeId: "n1", predicate: "SUMMARY", value: "Misalignment caused wear", confidence: 0.8 }] });
+    expect(prompt.user).toContain("ENGINEERING KNOWLEDGE GRAPH");
+    expect(prompt.user).toContain("[Knowledge:n1]");
+    expect(prompt.user).toContain("EXPERIENCED_FAILURE");
+    expect(prompt.user).toContain("Misalignment caused wear");
+  });
+
   it("accepts alert evidence in structured responses", () => {
     const result = new ResponseParser().parse({ answer: "Investigate", severity: "high", recommendations: [], evidence: [{ assetId: "MM-000001", source: "alert", detail: "High temperature" }], followUpQuestions: [] });
     expect(result.evidence[0].source).toBe("alert");

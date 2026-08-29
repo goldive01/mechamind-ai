@@ -7,7 +7,7 @@ export const copilotResponseSchema = z.object({
   recommendations: z.array(z.string().trim().min(1)).max(8),
   evidence: z.array(z.object({
     assetId: z.string().trim().min(1),
-    source: z.enum(["asset", "equipment", "inspection", "ai_report", "maintenance", "sensor", "health", "alert", "memory"]),
+    source: z.enum(["asset", "equipment", "inspection", "ai_report", "maintenance", "sensor", "health", "alert", "memory", "knowledge"]),
     detail: z.string().trim().min(1),
   })).max(12),
   followUpQuestions: z.array(z.string().trim().min(1)).max(4),

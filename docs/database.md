@@ -454,3 +454,7 @@ Movement types are `RECEIVED`, `ISSUED`, `RETURNED`, `TRANSFERRED`, `ADJUSTED`, 
 ## Engineering memory
 
 `EngineeringMemory` is organisation-owned and stores normalized source identity, searchable dimensions, confidence, outcome, frequency, and occurrence timestamps. `MemoryEvent` preserves observations, `MemoryTag` adds classifications, and `MemoryRelationship` forms weighted directed links. The organisation/external-key constraint makes ingestion idempotent while retaining repeated observations as event history and frequency.
+
+## Engineering knowledge graph
+
+`KnowledgeCategory` groups organisation-owned graph nodes. `KnowledgeNode` represents assets, components, engineers, spare parts, failures, recommendations, sensors, procedures, and work orders. `KnowledgeEdge` stores directed engineering relationships, and `KnowledgeFact` stores attributed predicate/value evidence. Composite organisation-scoped constraints prevent duplicate categories, nodes, edges, and facts. Repeated evidence increments occurrence counts and aggregates confidence.

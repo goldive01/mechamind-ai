@@ -1,6 +1,7 @@
 import type { MemorySourceType } from "@/domain/entities/EngineeringMemory";
 import { engineeringMemoryDtoSchema } from "@/dto/memory.dto";
 import type { MemoryRepository } from "@/repositories/MemoryRepository";
+import type { KnowledgeUpdater } from "@/services/KnowledgeBuilder";
 
 export interface MemoryIngestionInput {
   organisationId: string; sourceType: MemorySourceType; sourceId: string; eventType?: string; title: string; summary: string; details?: Record<string, unknown>;
@@ -10,10 +11,12 @@ export interface MemoryIngestionInput {
 export interface MemoryIngestor { ingest(input: MemoryIngestionInput): Promise<unknown> }
 
 export class MemoryIngestionService implements MemoryIngestor {
-  constructor(private readonly repository: MemoryRepository, private readonly clock: () => Date = () => new Date()) {}
-  ingest(input: MemoryIngestionInput) {
+  constructor(private readonly repository: MemoryRepository, private readonly clock: () => Date = () => new Date(), private readonly knowledge?: KnowledgeUpdater) {}
+  async ingest(input: MemoryIngestionInput) {
     const occurredAt = input.occurredAt ?? this.clock();
-    return this.repository.upsert(engineeringMemoryDtoSchema.parse({ ...input, externalKey: input.deduplicationKey ?? `${input.sourceType}:${input.sourceId}`, details: input.details ?? {}, confidence: input.confidence ?? 0.7, occurrenceCount: 1, occurredAt, lastObservedAt: occurredAt, tags: input.tags ?? [], event: { eventType: input.eventType ?? "Observed", sourceType: input.sourceType, sourceId: input.sourceId, payload: input.details ?? {}, occurredAt } }));
+    const memory = await this.repository.upsert(engineeringMemoryDtoSchema.parse({ ...input, externalKey: input.deduplicationKey ?? `${input.sourceType}:${input.sourceId}`, details: input.details ?? {}, confidence: input.confidence ?? 0.7, occurrenceCount: 1, occurredAt, lastObservedAt: occurredAt, tags: input.tags ?? [], event: { eventType: input.eventType ?? "Observed", sourceType: input.sourceType, sourceId: input.sourceId, payload: input.details ?? {}, occurredAt } }));
+    await this.knowledge?.updateFromMemory(memory);
+    return memory;
   }
   inspection(input: Omit<MemoryIngestionInput, "sourceType">) { return this.ingest({ ...input, sourceType: "Inspection" }); }
   workOrder(input: Omit<MemoryIngestionInput, "sourceType">) { return this.ingest({ ...input, sourceType: "WorkOrder" }); }

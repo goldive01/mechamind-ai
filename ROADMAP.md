@@ -58,6 +58,8 @@
 - Automatic operational ingestion
 - Multi-factor search and ranking
 - Copilot memory retrieval and cited prompt context
+- Engineering Knowledge Graph with automatic memory conversion
+- Organisation-scoped graph search, traversal, and Copilot context
 
 ## Future Direction
 

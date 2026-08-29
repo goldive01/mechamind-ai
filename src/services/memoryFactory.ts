@@ -3,6 +3,7 @@ import { PrismaMemoryRepository } from "@/infrastructure/repositories/PrismaMemo
 import { MemoryEngine } from "@/services/MemoryEngine";
 import { MemoryIngestionService } from "@/services/MemoryIngestionService";
 import { MemorySearchService } from "@/services/MemorySearchService";
+import { createKnowledgeBuilder } from "@/services/knowledgeFactory";
 export const createMemoryRepository = () => new PrismaMemoryRepository();
-export const createMemoryIngestionService = () => new MemoryIngestionService(createMemoryRepository());
+export const createMemoryIngestionService = () => new MemoryIngestionService(createMemoryRepository(), undefined, createKnowledgeBuilder());
 export const createMemoryEngine = () => { const repository = createMemoryRepository(); return new MemoryEngine(new MemorySearchService(repository)); };

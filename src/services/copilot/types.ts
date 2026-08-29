@@ -64,3 +64,4 @@ export interface CopilotPrompt {
 }
 
 export interface CopilotMemoryContext { id: string; citation: string; sourceType: string; sourceId: string; assetId: string | null; title: string; summary: string; occurredAt: string; confidence: number; rank: number; successful: boolean | null; ranking: { recency: number; similarity: number; confidence: number; successOutcome: number; frequency: number } }
+export interface CopilotKnowledgeContext { nodes: Array<{ id: string; citation: string; type: string; key: string; label: string; confidence: number }>; edges: Array<{ id: string; fromNodeId: string; toNodeId: string; relationship: string; confidence: number }>; facts: Array<{ id: string; nodeId: string; predicate: string; value: string; confidence: number }> }

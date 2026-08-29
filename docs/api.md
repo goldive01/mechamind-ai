@@ -552,3 +552,5 @@ Before internet-facing deployment:
 ## Engineering Memory in Copilot
 
 `POST /api/copilot/chat` searches and ranks organisation-scoped Engineering Memory before each provider request. Up to eight ranked memories are injected into protected prompt context. Responses may use `memory` as an evidence source and cite `[Memory:<id>]`.
+
+The same request searches the organisation-scoped Engineering Knowledge Graph and traverses related nodes up to a bounded depth. Relevant nodes, directed relationships, and supporting facts are injected alongside memory context. Responses may use `knowledge` as an evidence source and cite `[Knowledge:<id>]`.
