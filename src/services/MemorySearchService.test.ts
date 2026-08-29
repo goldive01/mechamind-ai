@@ -1,0 +1,4 @@
+import { describe, expect, it, vi } from "vitest";
+import type { MemoryRepository } from "@/repositories/MemoryRepository";
+import { MemorySearchService } from "@/services/MemorySearchService";
+describe("MemorySearchService", () => { it("validates and forwards all supported dimensions", async () => { const search = vi.fn(async () => []); const service = new MemorySearchService({ search } as unknown as MemoryRepository); await service.search({ organisationId: "o1", query: "bearing", equipmentId: "e1", assetId: "a1", fault: "fault", engineerId: "eng1", partId: "p1", sensorId: "s1", alertId: "al1", timelineType: "Repair", limit: 10 }); expect(search).toHaveBeenCalledWith(expect.objectContaining({ assetId: "a1", fault: "fault", engineerId: "eng1", partId: "p1", sensorId: "s1", alertId: "al1", timelineType: "Repair" })); }); });

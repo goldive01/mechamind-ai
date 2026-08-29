@@ -224,6 +224,9 @@ When adding a rule, define the supported metric and category explicitly, use mea
 
 ## Engineering Change Checklist
 
+Authentication changes must keep raw session tokens out of persistence and logs, hash passwords with a unique salt, validate sessions against expiry/revocation/user status, and repeat authorization in every Server Action and route handler. UI visibility is not an authorization boundary. New Copilot tools must use an existing permission code or introduce a validated permission through the RBAC administration workflow.
+
+
 - Preserve the dependency direction: transport to service to repository contract to infrastructure.
 - Use a DTO for every new boundary and validate untrusted input.
 - Keep calculation rules deterministic and isolated in an engine.
@@ -231,3 +234,7 @@ When adding a rule, define the supported metric and category explicitly, use mea
 - Consider downstream effects on alerts, health, recommendations, timelines, notifications, and Copilot.
 - Update architecture, API, database, roadmap, or engineering documentation when a contract changes.
 - Verify tests, linting, and the production build before merging.
+
+## Engineering Memory operations
+
+Operational services capture inspections, recommendations, work-order changes, completed repairs, engineer assignments, inventory movements, sensor observations, alerts, and timeline events through `MemoryIngestor`. Capture failures are isolated and logged so they do not roll back successful workflows. Copilot treats recalled experience as supporting evidence and cites used records with `[Memory:<id>]`.

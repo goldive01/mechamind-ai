@@ -1,0 +1,3 @@
+import { createAreaSchema, updateAreaSchema } from "@/dto/organisation.dto";
+import type { AreaRepository } from "@/repositories/AreaRepository";
+export class AreaService { constructor(private readonly repository: AreaRepository) {} create(value: unknown) { return this.repository.create(createAreaSchema.parse(value)); } update(value: unknown) { return this.repository.update(updateAreaSchema.parse(value)); } list(organisationId: string, buildingId?: string) { return this.repository.list(organisationId, buildingId); } get(organisationId: string, id: string) { return this.repository.findById(organisationId, id); } }

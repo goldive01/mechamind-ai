@@ -8,14 +8,15 @@ import type { AlertExplainer } from "@/services/AlertExplanationService";
 import { NotificationService } from "@/services/NotificationService";
 import { RecommendationEngine } from "@/services/RecommendationEngine";
 import { HealthEngine } from "@/services/HealthEngine";
+import type { MemoryIngestor } from "@/services/MemoryIngestionService";
 
 const severityRank = { Critical: 0, High: 1, Medium: 2, Low: 3 } as const;
 
 export class AlertService extends AlertEvaluationService {
   private readonly repository: AlertRepository;
   private readonly lifecycleLogger: Pick<Logger, "info">;
-  constructor(alerts: AlertRepository, engine: AlertEngine, health: HealthEngine, recommendations: RecommendationEngine, explainer: AlertExplainer, notifications: NotificationService, logger: Pick<Logger, "info"> = createLogger("AlertService")) {
-    super(alerts, engine, health, recommendations, explainer, notifications);
+  constructor(alerts: AlertRepository, engine: AlertEngine, health: HealthEngine, recommendations: RecommendationEngine, explainer: AlertExplainer, notifications: NotificationService, logger: Pick<Logger, "info"> = createLogger("AlertService"), memories?: MemoryIngestor) {
+    super(alerts, engine, health, recommendations, explainer, notifications, undefined, memories);
     this.repository = alerts;
     this.lifecycleLogger = logger;
   }

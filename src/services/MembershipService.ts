@@ -1,0 +1,3 @@
+import { createMembershipSchema, updateMembershipSchema } from "@/dto/organisation.dto";
+import type { MembershipRepository } from "@/repositories/MembershipRepository";
+export class MembershipService { constructor(private readonly repository: MembershipRepository) {} create(value: unknown) { return this.repository.create(createMembershipSchema.parse(value)); } update(value: unknown) { return this.repository.update(updateMembershipSchema.parse(value)); } list(organisationId: string) { return this.repository.list(organisationId); } forUser(organisationId: string, userId: string) { return this.repository.findForUser(organisationId, userId); } remove(organisationId: string, id: string) { return this.repository.remove(organisationId, id); } }

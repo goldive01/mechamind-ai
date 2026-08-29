@@ -17,13 +17,14 @@ function deriveAlerts(health: CopilotAssetContext["health"], readings: CopilotAs
 
 export class ContextBuilder {
   constructor(private readonly repository: CopilotContextRepository, private readonly healthEngine = new HealthEngine()) {}
-  async build(assetIds: string[]): Promise<CopilotAssetContext[]> {
+  async build(assetIds: string[], access?: CopilotAssetContext["access"]): Promise<CopilotAssetContext[]> {
     if (!assetIds.length) return [];
     const assets = await this.repository.findByAssetIds(assetIds);
     return assets.map((asset) => {
       const readings = asset.equipment.sensorDevices.flatMap((device) => device.readings);
       const score = this.healthEngine.calculate(asset.inspections, asset.equipment.maintenanceRecords, asset.createdAt, readings);
       const context: CopilotAssetContext = {
+        access,
         asset: { assetId: asset.assetId, status: asset.status, createdAt: asset.createdAt.toISOString() },
         equipment: { name: asset.equipment.name, manufacturer: asset.equipment.manufacturer, model: asset.equipment.model, serialNumber: asset.equipment.serialNumber, category: asset.equipment.category, location: asset.equipment.location, description: asset.equipment.description },
         inspections: asset.inspections.map((inspection) => ({ date: inspection.inspectionDate.toISOString(), condition: inspection.overallCondition, notes: inspection.notes, report: inspection.aiReport })),
@@ -32,6 +33,7 @@ export class ContextBuilder {
         health: { overallHealth: score.overallHealth, mechanicalHealth: score.mechanicalHealth, electricalHealth: score.electricalHealth, safetyScore: score.safetyScore, failureProbability: score.failureProbability, maintenancePriority: score.maintenancePriority, drivers: score.drivers },
         alerts: asset.alerts.map((alert) => ({ severity: alert.severity.toLowerCase() as CopilotAlert["severity"], source: "alert" as const, message: alert.title, recommendation: parseRecommendation(alert.recommendation) ?? alert.recommendation })),
         workOrders: asset.workOrders.map((order) => ({ id: order.id, title: order.title, description: order.description, priority: order.priority, status: order.status, assignedTo: order.assignedEngineer?.name ?? order.assignedTo, assignedEngineer: order.assignedEngineer ? { name: order.assignedEngineer.name, skills: order.assignedEngineer.skills.map((entry) => entry.skill.name) } : null, team: order.team?.name ?? null, scheduledStart: order.scheduledStart?.toISOString() ?? null, dueDate: order.dueDate?.toISOString() ?? null })),
+        inventory: { allocatedParts: asset.workOrders.flatMap((order) => (order.parts ?? []).map((part) => ({ workOrderId: order.id, partNumber: part.inventoryItem.sparePart.partNumber, name: part.inventoryItem.sparePart.name, quantity: part.quantity, availableQuantity: part.inventoryItem.available, warehouse: part.inventoryItem.warehouse.name, shelf: part.inventoryItem.shelf, deducted: part.deductedAt !== null, repairReadiness: part.inventoryItem.available >= part.quantity ? "Repair can begin immediately." : "Additional stock is required before repair." }))), compatibleParts: (asset.compatibleInventory ?? []).map((item) => ({ partNumber: item.sparePart.partNumber, name: item.sparePart.name, availableQuantity: item.available, warehouse: item.warehouse.name, shelf: item.shelf, repairReadiness: item.available > 0 ? "Repair can begin immediately." : "Part procurement is required." })), lowStock: asset.workOrders.flatMap((order) => order.parts ?? []).map((part) => ({ partNumber: part.inventoryItem.sparePart.partNumber, name: part.inventoryItem.sparePart.name, availableQuantity: part.inventoryItem.available, reorderLevel: part.inventoryItem.sparePart.reorderLevel, warehouse: part.inventoryItem.warehouse.name, shelf: part.inventoryItem.shelf })).filter((part) => part.availableQuantity <= part.reorderLevel) },
       };
       context.alerts.push(...deriveAlerts(context.health, context.sensorReadings, context.inspections));
       return context;

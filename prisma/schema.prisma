@@ -8,11 +8,243 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  fullName  String
-  email     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String       @id @default(cuid())
+  fullName     String
+  email        String       @unique
+  passwordHash String       @default("")
+  active       Boolean      @default(true)
+  roleId       String?
+  role         Role?        @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  sessions     Session[]
+  auditLogs    AuditLog[]
+  memberships  Membership[]
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([roleId, active])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       User[]
+  permissions RolePermission[]
+  memberships Membership[]
+}
+
+model Organisation {
+  id                  String                @id @default(cuid())
+  slug                String                @unique
+  name                String
+  description         String?
+  active              Boolean               @default(true)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  sites               Site[]
+  memberships         Membership[]
+  equipment           Equipment[]
+  assets              Asset[]
+  conversations       CopilotConversation[]
+  engineeringMemories EngineeringMemory[]
+
+  @@index([active, name])
+}
+
+model EngineeringMemory {
+  id              String               @id @default(cuid())
+  organisationId  String
+  organisation    Organisation         @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  sourceType      String
+  sourceId        String
+  externalKey     String
+  title           String
+  summary         String
+  detailsJson     String               @default("{}")
+  equipmentId     String?
+  assetId         String?
+  fault           String?
+  engineerId      String?
+  partId          String?
+  sensorId        String?
+  alertId         String?
+  timelineType    String?
+  confidence      Float                @default(0.7)
+  successful      Boolean?
+  occurrenceCount Int                  @default(1)
+  occurredAt      DateTime
+  lastObservedAt  DateTime
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  events          MemoryEvent[]
+  tags            MemoryTag[]
+  outgoing        MemoryRelationship[] @relation("MemoryRelationshipFrom")
+  incoming        MemoryRelationship[] @relation("MemoryRelationshipTo")
+
+  @@unique([organisationId, externalKey])
+  @@index([organisationId, assetId, occurredAt])
+  @@index([organisationId, sourceType, occurredAt])
+  @@index([organisationId, engineerId, partId, sensorId])
+}
+
+model MemoryEvent {
+  id          String            @id @default(cuid())
+  memoryId    String
+  memory      EngineeringMemory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  eventType   String
+  sourceType  String
+  sourceId    String
+  payloadJson String            @default("{}")
+  occurredAt  DateTime
+  createdAt   DateTime          @default(now())
+
+  @@index([memoryId, occurredAt])
+  @@index([sourceType, sourceId])
+}
+
+model MemoryRelationship {
+  id           String            @id @default(cuid())
+  fromMemoryId String
+  toMemoryId   String
+  relationship String
+  strength     Float             @default(1)
+  createdAt    DateTime          @default(now())
+  fromMemory   EngineeringMemory @relation("MemoryRelationshipFrom", fields: [fromMemoryId], references: [id], onDelete: Cascade)
+  toMemory     EngineeringMemory @relation("MemoryRelationshipTo", fields: [toMemoryId], references: [id], onDelete: Cascade)
+
+  @@unique([fromMemoryId, toMemoryId, relationship])
+  @@index([toMemoryId, relationship])
+}
+
+model MemoryTag {
+  id        String            @id @default(cuid())
+  memoryId  String
+  memory    EngineeringMemory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  name      String
+  value     String?
+  createdAt DateTime          @default(now())
+
+  @@unique([memoryId, name, value])
+  @@index([name, value])
+}
+
+model Site {
+  id             String       @id @default(cuid())
+  organisationId String
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  code           String
+  name           String
+  address        String?
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  buildings      Building[]
+  equipment      Equipment[]
+
+  @@unique([organisationId, code])
+  @@index([organisationId, active, name])
+}
+
+model Building {
+  id        String      @id @default(cuid())
+  siteId    String
+  site      Site        @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  code      String
+  name      String
+  active    Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  areas     Area[]
+  equipment Equipment[]
+
+  @@unique([siteId, code])
+  @@index([siteId, active, name])
+}
+
+model Area {
+  id          String      @id @default(cuid())
+  buildingId  String
+  building    Building    @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  code        String
+  name        String
+  description String?
+  active      Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  equipment   Equipment[]
+
+  @@unique([buildingId, code])
+  @@index([buildingId, active, name])
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  organisationId String
+  userId         String
+  roleId         String?
+  organisation   Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           Role?        @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  active         Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organisationId, userId])
+  @@index([userId, active])
+  @@index([organisationId, roleId, active])
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  code        String           @unique
+  name        String
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model Session {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt  DateTime
+  lastSeenAt DateTime  @default(now())
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt, revokedAt])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action       String
+  resource     String
+  resourceId   String?
+  outcome      String   @default("SUCCESS")
+  metadataJson String   @default("{}")
+  ipAddress    String?
+  userAgent    String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([resource, resourceId, createdAt])
 }
 
 model Equipment {
@@ -31,23 +263,39 @@ model Equipment {
   maintenanceRecords MaintenanceRecord[]
   sensorDevices      SensorDevice[]
   asset              Asset?
+  organisationId     String              @default("legacy")
+  organisation       Organisation        @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  siteId             String?
+  site               Site?               @relation(fields: [siteId], references: [id], onDelete: SetNull)
+  buildingId         String?
+  building           Building?           @relation(fields: [buildingId], references: [id], onDelete: SetNull)
+  areaId             String?
+  area               Area?               @relation(fields: [areaId], references: [id], onDelete: SetNull)
+
+  @@unique([organisationId, serialNumber])
+  @@index([organisationId, siteId, buildingId, areaId])
 }
 
 model Asset {
-  id            String         @id @default(cuid())
-  assetId       String         @unique
-  equipmentId   String         @unique
-  equipment     Equipment      @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
-  status        String         @default("Active")
-  primaryImage  String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  inspections   Inspection[]
-  aiReports     AIReport[]
-  sensorDevices SensorDevice[]
-  alerts        Alert[]
-  workOrders    WorkOrder[]
+  id             String          @id @default(cuid())
+  assetId        String          @unique
+  equipmentId    String          @unique
+  equipment      Equipment       @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  status         String          @default("Active")
+  primaryImage   String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  inspections    Inspection[]
+  aiReports      AIReport[]
+  sensorDevices  SensorDevice[]
+  alerts         Alert[]
+  workOrders     WorkOrder[]
   stockMovements StockMovement[]
+  organisationId String          @default("legacy")
+  organisation   Organisation    @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@unique([organisationId, assetId])
+  @@index([organisationId, status])
 }
 
 model WorkOrder {
@@ -83,99 +331,101 @@ model Warehouse {
   id             String          @id @default(cuid())
   code           String          @unique
   name           String
+  description    String?
   location       String?
-  active         Boolean         @default(true)
+  manager        String?
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   inventoryItems InventoryItem[]
-  stockMovements StockMovement[]
-  workOrderParts WorkOrderPart[]
 }
 
 model Supplier {
-  id          String      @id @default(cuid())
-  code        String      @unique
-  name        String
-  contactName String?
-  email       String?
-  phone       String?
-  leadTimeDays Int        @default(0)
-  active      Boolean     @default(true)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  spareParts  SparePart[]
+  id                String      @id @default(cuid())
+  supplierCode      String      @unique
+  name              String
+  email             String?
+  phone             String?
+  website           String?
+  address           String?
+  leadTimeDays      Int         @default(0)
+  preferredSupplier Boolean     @default(false)
+  rating            Float       @default(0)
+  createdAt         DateTime    @default(now())
+  spareParts        SparePart[]
 }
 
 model SparePart {
-  id             String          @id @default(cuid())
-  sku            String          @unique
-  name           String
-  description    String?
-  category       String
-  unit           String          @default("each")
-  unitCost        Float           @default(0)
-  reorderPoint   Int             @default(0)
-  reorderQuantity Int            @default(1)
-  supplierId     String?
-  supplier       Supplier?       @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  active         Boolean         @default(true)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  inventoryItems InventoryItem[]
-  stockMovements StockMovement[]
-  workOrderParts WorkOrderPart[]
+  id                   String          @id @default(cuid())
+  partNumber           String          @unique
+  barcode              String?         @unique
+  qrCode               String?         @unique
+  name                 String
+  description          String?
+  manufacturer         String?
+  category             String
+  image                String?
+  compatibleAssetTypes String          @default("[]")
+  unitCost             Float           @default(0)
+  reorderLevel         Int             @default(0)
+  minimumStock         Int             @default(0)
+  maximumStock         Int             @default(0)
+  leadTimeDays         Int             @default(0)
+  supplierId           String?
+  supplier             Supplier?       @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  inventoryItems       InventoryItem[]
 
   @@index([category, name])
   @@index([supplierId])
 }
 
 model InventoryItem {
-  id          String    @id @default(cuid())
-  warehouseId String
-  sparePartId String
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
-  sparePart   SparePart @relation(fields: [sparePartId], references: [id], onDelete: Cascade)
-  quantity    Int       @default(0)
-  reserved    Int       @default(0)
-  binLocation String?
-  updatedAt   DateTime  @updatedAt
+  id             String          @id @default(cuid())
+  warehouseId    String
+  sparePartId    String
+  warehouse      Warehouse       @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  sparePart      SparePart       @relation(fields: [sparePartId], references: [id], onDelete: Cascade)
+  quantity       Int             @default(0)
+  reserved       Int             @default(0)
+  available      Int             @default(0)
+  shelf          String?
+  lastMovementAt DateTime?
+  movements      StockMovement[]
+  workOrderParts WorkOrderPart[]
 
   @@unique([warehouseId, sparePartId])
   @@index([sparePartId, quantity])
 }
 
 model WorkOrderPart {
-  id          String    @id @default(cuid())
-  workOrderId String
-  sparePartId String
-  warehouseId String
-  quantity    Int
-  deductedAt  DateTime?
-  workOrder   WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
-  sparePart   SparePart @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
+  id              String        @id @default(cuid())
+  workOrderId     String
+  inventoryItemId String
+  quantity        Int
+  deductedAt      DateTime?
+  workOrder       WorkOrder     @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  inventoryItem   InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
 
-  @@unique([workOrderId, sparePartId, warehouseId])
+  @@unique([workOrderId, inventoryItemId])
   @@index([workOrderId, deductedAt])
 }
 
 model StockMovement {
-  id          String    @id @default(cuid())
-  warehouseId String
-  sparePartId String
-  assetId     String?
-  workOrderId String?
-  type        String
-  quantity    Int
-  balanceAfter Int
-  reason      String
-  reference   String?
-  createdAt   DateTime  @default(now())
-  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Restrict)
-  sparePart   SparePart @relation(fields: [sparePartId], references: [id], onDelete: Restrict)
-  asset       Asset?    @relation(fields: [assetId], references: [id], onDelete: SetNull)
+  id                         String        @id @default(cuid())
+  inventoryItemId            String
+  destinationInventoryItemId String?
+  assetId                    String?
+  workOrderId                String?
+  movementType               String
+  quantity                   Int
+  balanceAfter               Int
+  performedBy                String
+  reference                  String?
+  notes                      String?
+  createdAt                  DateTime      @default(now())
+  inventoryItem              InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Restrict)
+  asset                      Asset?        @relation(fields: [assetId], references: [id], onDelete: SetNull)
 
-  @@index([warehouseId, sparePartId, createdAt])
+  @@index([inventoryItemId, createdAt])
   @@index([workOrderId, createdAt])
   @@index([assetId, createdAt])
 }
@@ -432,12 +682,16 @@ model AIReport {
 }
 
 model CopilotConversation {
-  id        String                       @id @default(cuid())
-  title     String                       @default("Engineering conversation")
-  assetIds  String                       @default("[]")
-  createdAt DateTime                     @default(now())
-  updatedAt DateTime                     @updatedAt
-  messages  CopilotConversationMessage[]
+  id             String                       @id @default(cuid())
+  title          String                       @default("Engineering conversation")
+  assetIds       String                       @default("[]")
+  createdAt      DateTime                     @default(now())
+  updatedAt      DateTime                     @updatedAt
+  messages       CopilotConversationMessage[]
+  organisationId String                       @default("legacy")
+  organisation   Organisation                 @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+
+  @@index([organisationId, updatedAt])
 }
 
 model CopilotConversationMessage {

@@ -5,11 +5,15 @@ import { createLogger } from "@/infrastructure/logging/Logger";
 import { PrismaSensorRepository } from "@/infrastructure/repositories/PrismaSensorRepository";
 import { SensorDeviceNotFoundError, SensorService } from "@/services/SensorService";
 import { createAlertService } from "@/services/alertFactory";
+import { authorizeApi } from "@/lib/auth-session";
+import { createMemoryIngestionService } from "@/services/memoryFactory";
 
 const logger = createLogger("api.iot.readings");
-const sensorService = new SensorService(new PrismaSensorRepository(), createAlertService());
+const sensorService = new SensorService(new PrismaSensorRepository(), createAlertService(), createMemoryIngestionService());
 
 export async function POST(request: Request) {
+  const auth = await authorizeApi("telemetry:create");
+  if ("response" in auth) return auth.response;
   try {
     const payload: unknown = await request.json();
     const stored = await sensorService.record(sensorReadingDtoSchema.parse(payload));

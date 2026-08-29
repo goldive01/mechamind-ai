@@ -4,6 +4,7 @@ import { createLogger } from "@/infrastructure/logging/Logger";
 import { EngineeringRuleEngine } from "@/services/EngineeringRuleEngine";
 
 export interface RecommendationEnhancer { enhance(finding: AlertFinding, deterministic: RecommendationDto): Promise<RecommendationDto>; }
+export interface RecommendationInventoryAdvisor { recommend(requiredTools: string[]): Promise<Array<{ partNumber: string; name: string; availableQuantity: number; warehouseName: string | null; shelf: string | null; suggestedOrderQuantity: number; supplierName: string | null; repairReadiness: string; reason: string }>>; }
 interface ResponsesPayload { output_text?: string; output?: Array<{ content?: Array<{ text?: string }> }> }
 
 export class OpenAIRecommendationEnhancer implements RecommendationEnhancer {
@@ -21,12 +22,15 @@ export class OpenAIRecommendationEnhancer implements RecommendationEnhancer {
 
 export class RecommendationEngine {
   private readonly logger = createLogger("RecommendationEngine");
-  constructor(private readonly rules = new EngineeringRuleEngine(), private readonly enhancer?: RecommendationEnhancer) {}
+  constructor(private readonly rules = new EngineeringRuleEngine(), private readonly enhancer?: RecommendationEnhancer, private readonly inventory?: RecommendationInventoryAdvisor) {}
   async generate(finding: AlertFinding): Promise<RecommendationDto> {
     const deterministic = this.rules.evaluate(finding);
-    if (!this.enhancer) return deterministic;
-    try { return await this.enhancer.enhance(finding, deterministic); }
-    catch (error) { this.logger.warn("AI recommendation unavailable; using deterministic rules", { error: error instanceof Error ? error.message : error }); return deterministic; }
+    let recommendation = deterministic;
+    if (this.enhancer) try { recommendation = await this.enhancer.enhance(finding, deterministic); }
+    catch (error) { this.logger.warn("AI recommendation unavailable; using deterministic rules", { error: error instanceof Error ? error.message : error }); }
+    if (this.inventory) try { recommendation = recommendationSchema.parse({ ...recommendation, spareParts: await this.inventory.recommend([...recommendation.requiredTools, ...recommendation.actions, recommendation.rootCause]) }); }
+    catch (error) { this.logger.warn("Inventory recommendation unavailable", { error: error instanceof Error ? error.message : error }); }
+    return recommendation;
   }
   recommend(finding: AlertFinding): string;
   recommend(severity: AlertSeverity, category: AlertCategory, health: number): string;

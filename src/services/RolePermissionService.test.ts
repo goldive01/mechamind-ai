@@ -1,0 +1,6 @@
+import { describe, expect, it, vi } from "vitest";
+import { PermissionService } from "@/services/PermissionService";
+import { RoleService } from "@/services/RoleService";
+import type { RoleRepository } from "@/repositories/RoleRepository";
+import type { PermissionRepository } from "@/repositories/PermissionRepository";
+describe("role and permission services", () => { it("validates and creates roles", async () => { const repo = { create: vi.fn(async (input) => ({ id: "r1", permissions: [], description: input.description ?? null, name: input.name })), update: vi.fn(), findById: vi.fn(), list: vi.fn(), grantPermission: vi.fn(), revokePermission: vi.fn() } as unknown as RoleRepository; await new RoleService(repo).create({ name: "Engineer", description: "Field staff" }); expect(repo.create).toHaveBeenCalled(); }); it("validates and creates permissions", async () => { const repo = { create: vi.fn(async (input) => ({ id: "p1", description: input.description ?? null, code: input.code, name: input.name })), update: vi.fn(), findByCode: vi.fn(), list: vi.fn() } as unknown as PermissionRepository; const result = await new PermissionService(repo).create({ code: "assets:read", name: "Read assets" }); expect(result.code).toBe("assets:read"); }); });

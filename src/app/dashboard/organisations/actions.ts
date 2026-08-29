@@ -1,0 +1,7 @@
+"use server";
+import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { ORGANISATION_COOKIE, requireDashboardPermission, requireDashboardSession } from "@/lib/auth-session";
+import { createOrganisationServices } from "@/services/organisationFactory";
+export async function createOrganisation(formData: FormData) { const user = await requireDashboardPermission("system:admin"); const services = createOrganisationServices(); const organisation = await services.organisations.create({ slug: formData.get("slug"), name: formData.get("name"), description: formData.get("description") || null, active: true }); await services.memberships.create({ organisationId: organisation.id, userId: user.id, roleId: user.role?.id ?? null, active: true }); (await cookies()).set(ORGANISATION_COOKIE, organisation.id, { httpOnly: true, sameSite: "lax", path: "/", secure: process.env.NODE_ENV === "production" }); revalidatePath("/dashboard"); }
+export async function switchOrganisation(formData: FormData) { const session = await requireDashboardSession(); const id = String(formData.get("organisationId") ?? ""); const allowed = await createOrganisationServices().organisations.getForUser(id, session.user.id); if (!allowed) throw new Error("Organisation access denied."); (await cookies()).set(ORGANISATION_COOKIE, id, { httpOnly: true, sameSite: "lax", path: "/", secure: process.env.NODE_ENV === "production" }); revalidatePath("/dashboard"); }

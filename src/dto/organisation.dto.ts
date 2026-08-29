@@ -1,0 +1,26 @@
+import { z } from "zod";
+
+const id = z.string().trim().min(1).max(128);
+const code = z.string().trim().min(1).max(32).regex(/^[A-Za-z0-9][A-Za-z0-9_-]*$/).transform(value => value.toUpperCase());
+const name = z.string().trim().min(2).max(120);
+export const organisationScopeSchema = z.object({ organisationId: id }).strict();
+export const createOrganisationSchema = z.object({ slug: z.string().trim().min(2).max(64).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), name, description: z.string().trim().max(500).nullable().optional(), active: z.boolean().default(true) }).strict();
+export const updateOrganisationSchema = createOrganisationSchema.partial().extend({ id });
+export const createSiteSchema = z.object({ organisationId: id, code, name, address: z.string().trim().max(500).nullable().optional(), active: z.boolean().default(true) }).strict();
+export const updateSiteSchema = createSiteSchema.omit({ organisationId: true }).partial().extend({ id, organisationId: id });
+export const createBuildingSchema = z.object({ organisationId: id, siteId: id, code, name, active: z.boolean().default(true) }).strict();
+export const updateBuildingSchema = createBuildingSchema.omit({ siteId: true, organisationId: true }).partial().extend({ id, organisationId: id });
+export const createAreaSchema = z.object({ organisationId: id, buildingId: id, code, name, description: z.string().trim().max(500).nullable().optional(), active: z.boolean().default(true) }).strict();
+export const updateAreaSchema = createAreaSchema.omit({ buildingId: true, organisationId: true }).partial().extend({ id, organisationId: id });
+export const createMembershipSchema = z.object({ organisationId: id, userId: id, roleId: id.nullable().optional(), active: z.boolean().default(true) }).strict();
+export const updateMembershipSchema = z.object({ organisationId: id, id, roleId: id.nullable().optional(), active: z.boolean().optional() }).strict().refine(value => value.roleId !== undefined || value.active !== undefined, "At least one membership field is required.");
+export type CreateOrganisationDto = z.infer<typeof createOrganisationSchema>;
+export type UpdateOrganisationDto = z.infer<typeof updateOrganisationSchema>;
+export type CreateSiteDto = z.infer<typeof createSiteSchema>;
+export type UpdateSiteDto = z.infer<typeof updateSiteSchema>;
+export type CreateBuildingDto = z.infer<typeof createBuildingSchema>;
+export type UpdateBuildingDto = z.infer<typeof updateBuildingSchema>;
+export type CreateAreaDto = z.infer<typeof createAreaSchema>;
+export type UpdateAreaDto = z.infer<typeof updateAreaSchema>;
+export type CreateMembershipDto = z.infer<typeof createMembershipSchema>;
+export type UpdateMembershipDto = z.infer<typeof updateMembershipSchema>;

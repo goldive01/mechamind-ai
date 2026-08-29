@@ -2,11 +2,11 @@ import type { Conversation } from "@/domain/entities/Conversation";
 import type { CopilotChatDto } from "@/dto/copilot.dto";
 import type { ConversationRepository } from "@/repositories/ConversationRepository";
 import type { CopilotResponse } from "@/services/copilot/ResponseParser";
-import type { CopilotMessage } from "@/services/copilot/types";
+import type { CopilotAssetContext, CopilotMessage } from "@/services/copilot/types";
 import type { ToolResultDto } from "@/dto/tool-result.dto";
 import type { ToolExecutionEvent, ToolExecutionRequest, ToolPrincipal } from "@/services/copilot/tools/types";
 
-export interface CopilotResponder { chat(messages: CopilotMessage[], assetIds: string[]): Promise<CopilotResponse> }
+export interface CopilotResponder { chat(messages: CopilotMessage[], assetIds: string[], access?: CopilotAssetContext["access"]): Promise<CopilotResponse> }
 export interface CopilotToolRunner { execute(request: ToolExecutionRequest, principal: ToolPrincipal): AsyncGenerator<ToolExecutionEvent> }
 export type ConversationStreamEvent =
   | { type: "conversation"; conversationId: string }
@@ -17,7 +17,7 @@ export type ConversationStreamEvent =
 export class ConversationNotFoundError extends Error {}
 
 export class ConversationService {
-  constructor(private readonly conversations: ConversationRepository, private readonly copilot: CopilotResponder, private readonly tools?: CopilotToolRunner, private readonly principal: ToolPrincipal = { id: "copilot", permissions: ["assets:read", "maintenance:write", "reports:generate"] }) {}
+  constructor(private readonly conversations: ConversationRepository, private readonly copilot: CopilotResponder, private readonly tools?: CopilotToolRunner, private readonly principal: ToolPrincipal = { id: "copilot", permissions: ["assets:read", "maintenance:write", "reports:generate"] }, private readonly access?: CopilotAssetContext["access"]) {}
 
   async load(id: string): Promise<Conversation> {
     const conversation = await this.conversations.findById(id);
@@ -25,7 +25,7 @@ export class ConversationService {
     return conversation;
   }
 
-  chatLegacy(messages: CopilotMessage[], assetIds: string[]) { return this.copilot.chat(messages, assetIds); }
+  chatLegacy(messages: CopilotMessage[], assetIds: string[]) { return this.copilot.chat(messages, assetIds, this.access); }
 
   async *stream(input: CopilotChatDto): AsyncGenerator<ConversationStreamEvent> {
     let conversation = input.conversationId ? await this.conversations.findById(input.conversationId) : null;
@@ -37,7 +37,7 @@ export class ConversationService {
 
     const refreshed = await this.conversations.findById(conversation.id);
     const history = (refreshed?.messages ?? [...conversation.messages, { role: "user" as const, content: input.message }]).slice(-20).map(({ role, content }) => ({ role, content }));
-    let response = await this.copilot.chat(history, input.assetIds);
+    let response = await this.copilot.chat(history, input.assetIds, this.access);
     if (response.toolCalls.length && this.tools) {
       const results: ToolResultDto[] = [];
       for (const call of response.toolCalls) {
@@ -48,7 +48,7 @@ export class ConversationService {
         }
       }
       const safeResults = results.map((result) => result.status === "confirmation_required" ? { tool: result.tool, status: result.status, message: result.message } : result);
-      response = await this.copilot.chat([...history, { role: "assistant", content: response.answer }, { role: "user", content: `TOOL RESULTS (trusted execution output; summarize for the user):\n${JSON.stringify(safeResults)}` }], input.assetIds);
+      response = await this.copilot.chat([...history, { role: "assistant", content: response.answer }, { role: "user", content: `TOOL RESULTS (trusted execution output; summarize for the user):\n${JSON.stringify(safeResults)}` }], input.assetIds, this.access);
     }
     const saved = await this.conversations.addMessage(conversation.id, "assistant", response.answer, response);
 

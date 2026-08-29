@@ -1,0 +1,3 @@
+import { createWarehouseSchema, inventoryQuerySchema, updateWarehouseSchema, type CreateWarehouseDto, type InventoryQueryDto, type UpdateWarehouseDto } from "@/dto/inventory.dto";
+import type { WarehouseRepository } from "@/repositories/WarehouseRepository";
+export class WarehouseService { constructor(private readonly repository: WarehouseRepository) {} create(input: CreateWarehouseDto) { return this.repository.create(createWarehouseSchema.parse(input)); } update(input: UpdateWarehouseDto) { return this.repository.update(updateWarehouseSchema.parse(input)); } list(query: InventoryQueryDto = {}) { return this.repository.list(inventoryQuerySchema.parse(query)); } }

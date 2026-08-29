@@ -14,7 +14,7 @@ This document describes every implemented HTTP API endpoint, server action, and 
 
 ## Endpoint summary
 
-### Public APIs
+### Protected APIs
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
@@ -22,6 +22,8 @@ This document describes every implemented HTTP API endpoint, server action, and 
 | `POST` | `/api/ai/save` | Persist an analysis as an inspection and AI report |
 | `POST` | `/api/iot/readings` | Store sensor telemetry and evaluate alerts |
 | `POST` | `/api/copilot/chat` | Chat, stream, or load an engineering Copilot conversation |
+
+All API endpoints require a valid `mechamind_session` cookie and the endpoint-specific permission. Unauthenticated and unauthorized requests return `401` and `403` respectively.
 
 > There is no `POST /api/copilot` route. The implemented Copilot endpoint is `POST /api/copilot/chat`.
 
@@ -52,6 +54,12 @@ This document describes every implemented HTTP API endpoint, server action, and 
 | `GET` | `/dashboard/reports` | Inspection and AI reports |
 | `GET` | `/dashboard/scanner` | AI equipment scanner |
 | `GET` | `/dashboard/settings` | Application settings |
+| `GET` | `/dashboard/organisations` | Select or create an organisation |
+| `GET` | `/dashboard/locations` | Manage sites, buildings, and areas in the active organisation |
+| `GET` | `/dashboard/inventory` | Inventory balances, movements, transfers, adjustments, and work-order allocation |
+| `GET` | `/dashboard/spare-parts` | Searchable spare-part catalogue and reorder status |
+| `GET` | `/dashboard/warehouses` | Searchable warehouse management |
+| `GET` | `/dashboard/suppliers` | Searchable supplier management |
 
 ## AI analysis
 
@@ -513,13 +521,34 @@ Inspection module overview.
 
 Equipment module overview.
 
-## Authentication and production considerations
+## Authentication
 
-The current v1.3 routes do not expose a complete authentication or authorization boundary. Before internet-facing deployment:
+`GET /login` renders the credential form. Successful authentication creates an opaque, HTTP-only, SameSite=Lax database session cookie. Dashboard routes validate that session in the shared layout. Dashboard mutations and API handlers repeat authorization checks at their server boundary. Copilot receives the authenticated role and permissions and only executes tools covered by those permissions.
 
-- Authenticate API and dashboard requests.
-- Authorize asset mutations, alert transitions, and Copilot tools.
+Seeded development accounts use `SEED_USER_PASSWORD`, or `MechaMind123!` when the environment variable is absent. Production deployments must set a unique value and rotate seeded credentials.
+
+Administrative pages require `system:admin`:
+
+- `GET /dashboard/users` creates users and assigns roles.
+- `GET /dashboard/roles` creates roles and grants or revokes permissions.
+- `GET /dashboard/permissions` creates permission definitions.
+
+The field routes under `/mobile` require an authenticated session. Every field mutation additionally requires `dashboard:write`.
+
+## Production considerations
+
+### Inventory routes
+
+Inventory dashboard routes support server-rendered search and pagination-ready query contracts. Inventory actions validate all form data before calling `WarehouseService`, `SupplierService`, `InventoryService`, or `StockMovementService`. Movement actions cover receipts, issues, returns, transfers, adjustments, and automatic work-order consumption.
+
+Completing a work order consumes reserved parts once, creates asset-linked stock movements, and exposes those movements to the asset timeline and Copilot context.
+
+Before internet-facing deployment:
 - Apply request-rate limits, especially to AI and telemetry endpoints.
 - Protect uploaded files and validate access to asset data.
 - Use a production database and durable notification queue.
 - Store secrets only in protected environment variables.
+
+## Engineering Memory in Copilot
+
+`POST /api/copilot/chat` searches and ranks organisation-scoped Engineering Memory before each provider request. Up to eight ranked memories are injected into protected prompt context. Responses may use `memory` as an evidence source and cite `[Memory:<id>]`.

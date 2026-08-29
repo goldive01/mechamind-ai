@@ -4,11 +4,14 @@ import { apiError, apiSuccess } from "@/infrastructure/http/api-response";
 import { createLogger } from "@/infrastructure/logging/Logger";
 import { UploadValidationError, validateImageUpload } from "@/lib/uploads";
 import { AnalysisConfigurationError, AnalysisProviderError, AnalysisService } from "@/services/AnalysisService";
+import { authorizeApi } from "@/lib/auth-session";
 
 const logger = createLogger("api.ai.analyse");
 const analysisService = new AnalysisService();
 
 export async function POST(request: NextRequest) {
+  const auth = await authorizeApi("ai:analyse");
+  if ("response" in auth) return auth.response;
   try {
     const file = validateImageUpload((await request.formData()).get("image"));
     return apiSuccess(await analysisService.analyze(file));
@@ -21,4 +24,3 @@ export async function POST(request: NextRequest) {
     return apiError(error instanceof Error ? error.message : "Unknown OpenAI error", 500, { success: false });
   }
 }
-

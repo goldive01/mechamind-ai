@@ -241,6 +241,10 @@ erDiagram
 
 ## Core asset model
 
+### Organisation hierarchy
+
+`Organisation` is the tenant root. A user gains access through `Membership`, optionally with an organisation-specific role. `Site`, `Building`, and `Area` provide a cascading physical hierarchy. Equipment and assets carry an organisation key; equipment may additionally reference its site, building, and area. Copilot conversations are organisation-owned. The v1.4 migration creates a legacy organisation and assigns existing users and operational data to it.
+
 ### Equipment
 
 `Equipment` stores the physical equipment identity and descriptive information:
@@ -438,3 +442,15 @@ The notification queue and derived health history are not persisted in v1.3:
 - Structured recommendations are stored as serialized JSON in the alert recommendation field.
 
 Future production deployments may replace SQLite and the in-memory queue while preserving the repository and provider contracts.
+
+## Inventory and spare parts
+
+The v1.4 inventory module adds `Warehouse`, `Supplier`, `SparePart`, `InventoryItem`, `StockMovement`, and `WorkOrderPart`. Inventory is unique per warehouse and spare part. `available` is maintained as `quantity - reserved`, while `lastMovementAt` records the latest ledger change.
+
+Work-order allocations reserve an `InventoryItem`. Completing the work order atomically consumes each undeducted allocation, updates quantity and reservation totals, and writes a `CONSUMED` movement linked to the asset and work order. The `deductedAt` marker makes completion retries idempotent.
+
+Movement types are `RECEIVED`, `ISSUED`, `RETURNED`, `TRANSFERRED`, `ADJUSTED`, and `CONSUMED`. Transfers create paired outgoing and incoming ledger entries. Stock movement history is append-only.
+
+## Engineering memory
+
+`EngineeringMemory` is organisation-owned and stores normalized source identity, searchable dimensions, confidence, outcome, frequency, and occurrence timestamps. `MemoryEvent` preserves observations, `MemoryTag` adds classifications, and `MemoryRelationship` forms weighted directed links. The organisation/external-key constraint makes ingestion idempotent while retaining repeated observations as event history and frequency.

@@ -48,9 +48,16 @@
 - Field Engineer Mobile
 - Work Orders
 - Inventory
-- Authentication
-- Multi-Organisation
+- Authentication and role-based access control (Complete)
+- Multi-Organisation (Complete)
 - Cloud Deployment
+
+## Version 1.5 - Engineering Memory (Complete)
+
+- Persistent engineering memories, events, relationships, and tags
+- Automatic operational ingestion
+- Multi-factor search and ranking
+- Copilot memory retrieval and cited prompt context
 
 ## Future Direction
 

@@ -32,4 +32,5 @@ describe("RecommendationEngine", () => {
   it("retains the legacy severity recommendation interface", () => {
     expect(new RecommendationEngine().recommend("Critical", "Safety", 25)).toContain("Immediately isolate");
   });
+  it("enriches AI recommendations with repair-ready spare-part availability", async () => { const inventory = { recommend: vi.fn().mockResolvedValue([{ partNumber: "BRG-01", name: "Drive bearing", availableQuantity: 12, warehouseName: "Warehouse A", shelf: "B-14", suggestedOrderQuantity: 0, supplierName: "Bearing Co", repairReadiness: "Repair can begin immediately.", reason: "Available" }]) }; const recommendation = await new RecommendationEngine(undefined, undefined, inventory).generate(finding("vibration")); expect(recommendation.spareParts).toEqual([expect.objectContaining({ partNumber: "BRG-01", warehouseName: "Warehouse A", shelf: "B-14", repairReadiness: "Repair can begin immediately." })]); expect(inventory.recommend).toHaveBeenCalledWith(expect.arrayContaining(["Vibration analyser"])); });
 });

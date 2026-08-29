@@ -1,0 +1,3 @@
+import { engineeringMemoryDtoSchema, memoryRelationshipDtoSchema, type EngineeringMemoryDto, type MemoryRelationshipDto } from "@/dto/memory.dto";
+import type { MemoryRepository } from "@/repositories/MemoryRepository";
+export class MemoryService { constructor(private readonly repository: MemoryRepository) {} remember(input: EngineeringMemoryDto) { return this.repository.upsert(engineeringMemoryDtoSchema.parse(input)); } find(id: string, organisationId: string) { return this.repository.findById(id, organisationId); } relate(input: MemoryRelationshipDto) { return this.repository.relate(memoryRelationshipDtoSchema.parse(input)); } }

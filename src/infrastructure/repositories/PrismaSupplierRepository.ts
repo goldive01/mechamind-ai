@@ -1,0 +1,6 @@
+import "server-only";
+import type { InventoryQuery, Page, Supplier } from "@/domain/entities/Inventory";
+import type { CreateSupplierDto, UpdateSupplierDto } from "@/dto/inventory.dto";
+import { prisma } from "@/lib/prisma";
+import type { SupplierRepository } from "@/repositories/SupplierRepository";
+export class PrismaSupplierRepository implements SupplierRepository { create(input: CreateSupplierDto) { return prisma.supplier.create({ data: input }); } update(input: UpdateSupplierDto) { const { id, ...data } = input; return prisma.supplier.update({ where: { id }, data }); } async list(query: InventoryQuery): Promise<Page<Supplier>> { const where = query.search ? { OR: [{ supplierCode: { contains: query.search } }, { name: { contains: query.search } }, { email: { contains: query.search } }] } : {}; const [items, total] = await Promise.all([prisma.supplier.findMany({ where, orderBy: [{ preferredSupplier: "desc" }, { name: "asc" }], skip: ((query.page ?? 1) - 1) * (query.pageSize ?? 25), take: query.pageSize ?? 25 }), prisma.supplier.count({ where })]); return { items, total, page: query.page ?? 1, pageSize: query.pageSize ?? 25, pageCount: Math.ceil(total / (query.pageSize ?? 25)) }; } }

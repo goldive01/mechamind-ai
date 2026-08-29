@@ -9,18 +9,21 @@ import { NotificationEngine } from "@/services/NotificationEngine";
 import { NotificationQueue } from "@/services/NotificationQueue";
 import { EscalationEngine } from "@/services/EscalationEngine";
 import { OpenAIRecommendationEnhancer, RecommendationEngine } from "@/services/RecommendationEngine";
+import { InventoryRecommendationService } from "@/services/InventoryRecommendationService";
+import { createInventoryRepository } from "@/services/inventoryFactory";
 import { EmailProvider } from "@/services/notifications/EmailProvider";
 import { PushProvider } from "@/services/notifications/PushProvider";
 import { SMSProvider } from "@/services/notifications/SMSProvider";
 import { TeamsProvider } from "@/services/notifications/TeamsProvider";
 import { SlackProvider } from "@/services/notifications/SlackProvider";
 import { WebhookProvider } from "@/services/notifications/WebhookProvider";
+import { createMemoryIngestionService } from "@/services/memoryFactory";
 
 const notificationQueue = new NotificationQueue();
 const notificationEngine = new NotificationEngine(new EscalationEngine(), notificationQueue);
 const notificationService = new NotificationService([new EmailProvider(), new PushProvider(), new SMSProvider(), new TeamsProvider(), new SlackProvider(), new WebhookProvider()], notificationEngine);
 
 export function createAlertService() {
-  const recommendations = new RecommendationEngine(undefined, new OpenAIRecommendationEnhancer());
-  return new AlertService(new PrismaAlertRepository(), new AlertEngine(), new HealthEngine(), recommendations, new AIAlertExplanationService(recommendations), notificationService);
+  const recommendations = new RecommendationEngine(undefined, new OpenAIRecommendationEnhancer(), new InventoryRecommendationService(createInventoryRepository()));
+  return new AlertService(new PrismaAlertRepository(), new AlertEngine(), new HealthEngine(), recommendations, new AIAlertExplanationService(recommendations), notificationService, undefined, createMemoryIngestionService());
 }

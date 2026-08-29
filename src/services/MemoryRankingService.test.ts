@@ -1,0 +1,8 @@
+import { describe, expect, it } from "vitest";
+import type { EngineeringMemory } from "@/domain/entities/EngineeringMemory";
+import { MemoryRankingService } from "@/services/MemoryRankingService";
+const memory = (overrides: Partial<EngineeringMemory>): EngineeringMemory => ({ id: "m1", organisationId: "o1", sourceType: "CompletedRepair", sourceId: "r1", externalKey: "repair:r1", title: "Pump bearing repair", summary: "Replaced a failed bearing", details: {}, equipmentId: null, assetId: "A1", fault: "bearing failure", engineerId: null, partId: null, sensorId: null, alertId: null, timelineType: null, confidence: 0.9, successful: true, occurrenceCount: 3, occurredAt: new Date("2026-08-20"), lastObservedAt: new Date("2026-08-20"), createdAt: new Date(), updatedAt: new Date(), events: [], tags: [], ...overrides });
+describe("MemoryRankingService", () => {
+  it("calculates lexical similarity", () => { expect(new MemoryRankingService().similarity("pump bearing fault", memory({}))).toBeGreaterThan(0); });
+  it("ranks recency, similarity, confidence, success, and frequency", () => { const ranked = new MemoryRankingService().rank([memory({ id: "old", title: "Unrelated", confidence: 0.2, successful: false, occurrenceCount: 1, lastObservedAt: new Date("2020-01-01") }), memory({ id: "best" })], { query: "pump bearing repair", assetIds: ["A1"], now: new Date("2026-08-29") }); expect(ranked[0].id).toBe("best"); expect(ranked[0].ranking).toEqual(expect.objectContaining({ recency: expect.any(Number), similarity: expect.any(Number), confidence: 0.9, successOutcome: 1, frequency: expect.any(Number) })); });
+});

@@ -6,11 +6,15 @@ import { PrismaInspectionRepository } from "@/infrastructure/repositories/Prisma
 import { UploadValidationError, validateImageUpload } from "@/lib/uploads";
 import { InspectionService } from "@/services/InspectionService";
 import { createAlertService } from "@/services/alertFactory";
+import { authorizeApi } from "@/lib/auth-session";
+import { createMemoryIngestionService } from "@/services/memoryFactory";
 
 const logger = createLogger("api.ai.save");
-const inspectionService = new InspectionService(new PrismaInspectionRepository(), createAlertService());
+const inspectionService = new InspectionService(new PrismaInspectionRepository(), createAlertService(), createMemoryIngestionService());
 
 export async function POST(request: NextRequest) {
+  const auth = await authorizeApi("inspections:create");
+  if ("response" in auth) return auth.response;
   try {
     const formData = await request.formData();
     const file = validateImageUpload(formData.get("image"));

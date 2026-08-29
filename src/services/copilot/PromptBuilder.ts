@@ -1,7 +1,7 @@
-import type { CopilotAssetContext, CopilotMessage, CopilotPrompt } from "@/services/copilot/types";
+import type { CopilotAssetContext, CopilotMemoryContext, CopilotMessage, CopilotPrompt } from "@/services/copilot/types";
 
 export class PromptBuilder {
-  build(messages: CopilotMessage[], context: CopilotAssetContext[]): CopilotPrompt {
+  build(messages: CopilotMessage[], context: CopilotAssetContext[], memories: CopilotMemoryContext[] = []): CopilotPrompt {
     const conversation = messages.map((message) => `${message.role.toUpperCase()}: ${message.content}`).join("\n\n");
     return {
       system: [
@@ -13,6 +13,9 @@ export class PromptBuilder {
         "Format the answer field as readable Markdown using short headings, lists, and emphasis where useful.",
         "Use registered tools when they are necessary for fresh data or an explicitly requested action. Never claim a tool succeeded before receiving its result.",
         "When discussing assignments, consider the supplied engineer skills, team, and workload context; never invent availability or certifications.",
+        "When recommending maintenance, use allocated-part availability and low-stock signals from inventory context; distinguish stocked parts from items that require procurement.",
+        "Respect the access permissions supplied in context. Do not disclose unavailable data or propose tools the user is not permitted to run.",
+        "Previous engineering experience is supporting evidence, not a substitute for current measurements. Cite any used memory with its exact [Memory:<id>] citation.",
       ].join(" "),
       user: [
         "ENGINEERING TASK",
@@ -23,8 +26,11 @@ export class PromptBuilder {
         "\nASSET CONTEXT (JSON)\n<context>",
         JSON.stringify(context),
         "</context>",
+        "\nENGINEERING MEMORY (ranked JSON)\n<memory>",
+        JSON.stringify(memories),
+        "</memory>",
         "\nAVAILABLE TOOLS: searchAssets, getAssetHealth, compareAssets, createMaintenance, generateInspectionReport, calculateHealth. Put requested calls in toolCalls with a unique id, exact tool name, and argumentsJson containing a JSON-encoded arguments object. createMaintenance requires user confirmation. If tool result data is present in the conversation, synthesize it and return toolCalls as an empty array.",
-        "\nReturn the required structured response. Treat alerts as priority signals, but verify them against their source data. Evidence entries must reference only asset IDs present in the context. If no assets were selected, provide general guidance and leave evidence empty.",
+        "\nReturn the required structured response. Treat alerts as priority signals, but verify them against their source data. When a retrieved memory influences the answer, include its exact citation in the answer and add a memory evidence entry when it has an assetId. Evidence entries must reference only asset IDs present in the context. If no assets were selected, provide general guidance and leave evidence empty.",
       ].join("\n"),
     };
   }

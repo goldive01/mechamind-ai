@@ -1,0 +1,3 @@
+import { createBuildingSchema, updateBuildingSchema } from "@/dto/organisation.dto";
+import type { BuildingRepository } from "@/repositories/BuildingRepository";
+export class BuildingService { constructor(private readonly repository: BuildingRepository) {} create(value: unknown) { return this.repository.create(createBuildingSchema.parse(value)); } update(value: unknown) { return this.repository.update(updateBuildingSchema.parse(value)); } list(organisationId: string, siteId?: string) { return this.repository.list(organisationId, siteId); } get(organisationId: string, id: string) { return this.repository.findById(organisationId, id); } }

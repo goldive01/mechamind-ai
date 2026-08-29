@@ -1,0 +1,3 @@
+import { createOrganisationSchema, updateOrganisationSchema } from "@/dto/organisation.dto";
+import type { OrganisationRepository } from "@/repositories/OrganisationRepository";
+export class OrganisationService { constructor(private readonly repository: OrganisationRepository) {} create(value: unknown) { return this.repository.create(createOrganisationSchema.parse(value)); } update(value: unknown) { return this.repository.update(updateOrganisationSchema.parse(value)); } listForUser(userId: string) { return this.repository.listForUser(userId); } getForUser(id: string, userId: string) { return this.repository.findById(id, userId); } }

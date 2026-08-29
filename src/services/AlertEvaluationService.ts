@@ -7,6 +7,7 @@ import { HealthEngine } from "@/services/HealthEngine";
 import { NotificationService } from "@/services/NotificationService";
 import { RecommendationEngine } from "@/services/RecommendationEngine";
 import { serializeRecommendation } from "@/dto/recommendation.dto";
+import type { MemoryIngestor } from "@/services/MemoryIngestionService";
 
 export type AlertTrigger = "Sensor Reading" | "Inspection" | "AI Report" | "Health Recalculation";
 
@@ -24,6 +25,7 @@ export class AlertEvaluationService implements AlertMonitor {
     private readonly explainer: AlertExplainer,
     protected readonly notifications: NotificationService,
     private readonly logger: Pick<Logger, "info"> = createLogger("AlertEvaluationService"),
+    private readonly memories?: MemoryIngestor,
   ) {}
 
   async evaluateSensor(deviceId?: string, macAddress?: string, readingId?: string) {
@@ -56,6 +58,7 @@ export class AlertEvaluationService implements AlertMonitor {
       const recommendation = await this.recommendations.generate(finding);
       const result = await this.alerts.upsertFinding({ ...finding, description, recommendation: serializeRecommendation(recommendation) });
       active.push(result.alert);
+      try { await this.memories?.ingest({ organisationId: "legacy", sourceType: "Alert", sourceId: result.alert.id, title: result.alert.title, summary: result.alert.description, assetId, alertId: result.alert.id, fault: result.alert.metric, confidence: 0.9, occurredAt: result.alert.updatedAt, details: { severity: result.alert.severity, status: result.alert.status, metric: result.alert.metric, observedValue: result.alert.observedValue, thresholdValue: result.alert.thresholdValue }, tags: [{ name: "severity", value: result.alert.severity }, { name: "trigger", value: trigger }] }); await this.memories?.ingest({ organisationId: "legacy", sourceType: "Recommendation", sourceId: result.alert.id, title: `Recommendation: ${result.alert.title}`, summary: serializeRecommendation(recommendation), assetId, alertId: result.alert.id, fault: result.alert.metric, confidence: 0.85, occurredAt: result.alert.updatedAt, details: { recommendation }, tags: [{ name: "alert", value: result.alert.id }] }); } catch (error) { this.logger.info("engineering memory ingestion failed", { assetId, alertId: result.alert.id, error: error instanceof Error ? error.message : String(error) }); }
       if (result.changed) await this.notifications.notify(result.alert);
     }
 

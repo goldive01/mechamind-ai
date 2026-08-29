@@ -20,16 +20,20 @@ function toDomain(record: RecordWithMessages) {
 }
 
 export class PrismaConversationRepository implements ConversationRepository {
+  constructor(private readonly organisationId: string) {}
   async create(assetIds: string[], title = "Engineering conversation") {
-    const record = await prisma.copilotConversation.create({ data: { title, assetIds: JSON.stringify(assetIds) }, include: { messages: { orderBy: { createdAt: "asc" } } } });
+    const permitted = await prisma.asset.count({ where: { organisationId: this.organisationId, assetId: { in: [...new Set(assetIds)] } } });
+    if (permitted !== new Set(assetIds).size) throw new Error("One or more assets are outside the active organisation.");
+    const record = await prisma.copilotConversation.create({ data: { organisationId: this.organisationId, title, assetIds: JSON.stringify(assetIds) }, include: { messages: { orderBy: { createdAt: "asc" } } } });
     return toDomain(record);
   }
   async findById(id: string) {
-    const record = await prisma.copilotConversation.findUnique({ where: { id }, include: { messages: { orderBy: { createdAt: "asc" } } } });
+    const record = await prisma.copilotConversation.findFirst({ where: { id, organisationId: this.organisationId }, include: { messages: { orderBy: { createdAt: "asc" } } } });
     return record ? toDomain(record) : null;
   }
-  async updateAssetIds(id: string, assetIds: string[]) { await prisma.copilotConversation.update({ where: { id }, data: { assetIds: JSON.stringify(assetIds) } }); }
+  async updateAssetIds(id: string, assetIds: string[]) { const permitted = await prisma.asset.count({ where: { organisationId: this.organisationId, assetId: { in: [...new Set(assetIds)] } } }); if (permitted !== new Set(assetIds).size) throw new Error("One or more assets are outside the active organisation."); const result = await prisma.copilotConversation.updateMany({ where: { id, organisationId: this.organisationId }, data: { assetIds: JSON.stringify(assetIds) } }); if (!result.count) throw new Error("Conversation not found in organisation."); }
   async addMessage(conversationId: string, role: CopilotRole, content: string, response?: CopilotResponse) {
+    const conversation = await prisma.copilotConversation.findFirst({ where: { id: conversationId, organisationId: this.organisationId }, select: { id: true } }); if (!conversation) throw new Error("Conversation not found in organisation.");
     const message = await prisma.copilotConversationMessage.create({ data: { conversationId, role, content, responseJson: response ? JSON.stringify(response) : undefined } });
     return { id: message.id, role, content: message.content, response: parseResponse(message.responseJson), createdAt: message.createdAt };
   }

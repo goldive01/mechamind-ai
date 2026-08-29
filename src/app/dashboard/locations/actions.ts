@@ -1,0 +1,7 @@
+"use server";
+import { revalidatePath } from "next/cache";
+import { requireDashboardPermission, requireOrganisationScope } from "@/lib/auth-session";
+import { createOrganisationServices } from "@/services/organisationFactory";
+export async function createSite(formData: FormData) { await requireDashboardPermission("system:admin"); const { organisationId } = await requireOrganisationScope(); await createOrganisationServices().sites.create({ organisationId, code: formData.get("code"), name: formData.get("name"), address: formData.get("address") || null, active: true }); revalidatePath("/dashboard/locations"); }
+export async function createBuilding(formData: FormData) { await requireDashboardPermission("system:admin"); const { organisationId } = await requireOrganisationScope(); await createOrganisationServices().buildings.create({ organisationId, siteId: formData.get("siteId"), code: formData.get("code"), name: formData.get("name"), active: true }); revalidatePath("/dashboard/locations"); }
+export async function createArea(formData: FormData) { await requireDashboardPermission("system:admin"); const { organisationId } = await requireOrganisationScope(); await createOrganisationServices().areas.create({ organisationId, buildingId: formData.get("buildingId"), code: formData.get("code"), name: formData.get("name"), description: formData.get("description") || null, active: true }); revalidatePath("/dashboard/locations"); }

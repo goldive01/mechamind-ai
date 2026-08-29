@@ -1,5 +1,6 @@
 import { PrismaClient } from "../src/generated/prisma/client";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { hashPassword } from "../src/services/AuthenticationService";
 
 const adapter = new PrismaBetterSqlite3({ url: process.env.DATABASE_URL ?? "file:./dev.db" });
 const prisma = new PrismaClient({ adapter });
@@ -15,6 +16,7 @@ async function main() {
   await prisma.asset.deleteMany();
   await prisma.assetSequence.deleteMany();
   await prisma.equipment.deleteMany();
+  const organisation = await prisma.organisation.upsert({ where: { slug: "mechamind" }, update: { name: "MechaMind Operations", active: true }, create: { id: "legacy", slug: "mechamind", name: "MechaMind Operations", description: "Default operational organisation." } });
 
   const equipment = await Promise.all(
     Array.from({ length: 5 }).map((_, index) =>
@@ -28,6 +30,7 @@ async function main() {
           description: `High-performance equipment unit ${index + 1}`,
           location: ["Plant A", "Plant B", "Warehouse", "Dock 2", "Lab"][index],
           image: `/images/equipment-${index + 1}.png`,
+          organisationId: organisation.id,
         },
       }),
     ),
@@ -40,6 +43,7 @@ async function main() {
           assetId: `MM-${String(index + 1).padStart(6, "0")}`,
           equipmentId: equipmentItem.id,
           primaryImage: equipmentItem.image,
+          organisationId: organisation.id,
         },
       }),
     ),
@@ -115,13 +119,22 @@ async function main() {
     }),
   });
 
+  const permissionCodes = ["system:admin", "dashboard:read", "dashboard:write", "assets:read", "assets:write", "ai:analyse", "inspections:create", "telemetry:create", "copilot:use", "maintenance:write", "reports:generate"];
+  const permissions = await Promise.all(permissionCodes.map((code) => prisma.permission.upsert({ where: { code }, update: {}, create: { code, name: code.split(":").map((part) => part[0].toUpperCase() + part.slice(1)).join(" ") } })));
+  const adminRole = await prisma.role.upsert({ where: { name: "Administrator" }, update: {}, create: { name: "Administrator", description: "Full MechaMind operations access." } });
+  await Promise.all(permissions.map((permission) => prisma.rolePermission.upsert({ where: { roleId_permissionId: { roleId: adminRole.id, permissionId: permission.id } }, update: {}, create: { roleId: adminRole.id, permissionId: permission.id } })));
+  const engineerRole = await prisma.role.upsert({ where: { name: "Engineer" }, update: {}, create: { name: "Engineer", description: "Operational engineering access." } });
+  await Promise.all(permissions.filter((permission) => permission.code !== "system:admin").map((permission) => prisma.rolePermission.upsert({ where: { roleId_permissionId: { roleId: engineerRole.id, permissionId: permission.id } }, update: {}, create: { roleId: engineerRole.id, permissionId: permission.id } })));
+  const seedPasswordHash = hashPassword(process.env.SEED_USER_PASSWORD ?? "MechaMind123!");
   await prisma.user.createMany({
     data: [
-      { fullName: "Alex Morgan", email: "alex@example.com" },
-      { fullName: "Riley Chen", email: "riley@example.com" },
-      { fullName: "Sam Ortiz", email: "sam@example.com" },
+      { fullName: "Alex Morgan", email: "alex@example.com", passwordHash: seedPasswordHash, roleId: adminRole.id },
+      { fullName: "Riley Chen", email: "riley@example.com", passwordHash: seedPasswordHash, roleId: engineerRole.id },
+      { fullName: "Sam Ortiz", email: "sam@example.com", passwordHash: seedPasswordHash, roleId: engineerRole.id },
     ],
   });
+  const users = await prisma.user.findMany();
+  await prisma.membership.createMany({ data: users.map(user => ({ organisationId: organisation.id, userId: user.id, roleId: user.roleId, active: true })) });
 
   console.log("Seed data created successfully");
 }

@@ -13,15 +13,29 @@ import { ToolExecutor } from "@/services/copilot/tools/ToolExecutor";
 import { ToolRegistry } from "@/services/copilot/tools/ToolRegistry";
 import { createToolDefinitions } from "@/services/copilot/tools/toolDefinitions";
 import { createAlertService } from "@/services/alertFactory";
+import { authorizeApi, ORGANISATION_COOKIE } from "@/lib/auth-session";
+import { cookies } from "next/headers";
+import { createOrganisationServices } from "@/services/organisationFactory";
+import type { ToolPermission } from "@/services/copilot/tools/types";
+import { createMemoryEngine } from "@/services/memoryFactory";
 
 const logger = createLogger("api.copilot.chat");
 const operations = new PrismaAssetOperationsRepository();
 const toolRegistry = new ToolRegistry(createToolDefinitions(new AssetQueryService(operations, undefined, createAlertService()), new MaintenanceService(operations), new InspectionReportService(operations)));
-const service = new ConversationService(new PrismaConversationRepository(), new CopilotService(new ContextBuilder(new PrismaCopilotContextRepository())), new ToolExecutor(toolRegistry));
 const encoder = new TextEncoder();
 const line = (value: unknown) => encoder.encode(`${JSON.stringify(value)}\n`);
 
 export async function POST(request: Request) {
+  const auth = await authorizeApi("copilot:use");
+  if ("response" in auth) return auth.response;
+  const requestedOrganisationId = (await cookies()).get(ORGANISATION_COOKIE)?.value;
+  const organisations = await createOrganisationServices().organisations.listForUser(auth.session.user.id);
+  const organisation = requestedOrganisationId ? organisations.find(item => item.id === requestedOrganisationId) : organisations[0];
+  if (!organisation) return apiError("An active organisation membership is required.", 403);
+  const permissionCodes = auth.session.user.role?.permissions.map((permission) => permission.code) ?? [];
+  const toolPermissions = permissionCodes.filter((permission): permission is ToolPermission => ["assets:read", "maintenance:write", "reports:generate"].includes(permission));
+  const access = { userId: auth.session.user.id, role: auth.session.user.role?.name ?? null, permissions: permissionCodes, organisationId: organisation.id, organisationName: organisation.name };
+  const service = new ConversationService(new PrismaConversationRepository(organisation.id), new CopilotService(new ContextBuilder(new PrismaCopilotContextRepository(organisation.id)), undefined, undefined, createMemoryEngine()), new ToolExecutor(toolRegistry), { id: auth.session.user.id, permissions: toolPermissions }, access);
   try {
     const input = copilotRequestDtoSchema.parse(await request.json());
     if ("action" in input && input.action === "load") return apiSuccess({ conversation: await service.load(input.conversationId) });

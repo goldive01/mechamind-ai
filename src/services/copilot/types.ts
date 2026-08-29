@@ -8,6 +8,7 @@ export interface CopilotMessage {
 export interface CopilotAlert { severity: "low" | "medium" | "high" | "critical"; source: "health" | "sensor" | "inspection" | "alert"; message: string; recommendation?: unknown }
 
 export interface CopilotAssetContext {
+  access?: { userId: string; role: string | null; permissions: string[]; organisationId?: string; organisationName?: string };
   asset: {
     assetId: string;
     status: string;
@@ -54,9 +55,12 @@ export interface CopilotAssetContext {
   };
   alerts: CopilotAlert[];
   workOrders: Array<{ id: string; title: string; description: string; priority: string; status: string; assignedTo: string | null; scheduledStart: string | null; dueDate: string | null; assignedEngineer?: { name: string; skills: string[] } | null; team?: string | null }>;
+  inventory: { allocatedParts: Array<{ workOrderId: string; partNumber: string; name: string; quantity: number; availableQuantity: number; warehouse: string; shelf: string | null; deducted: boolean; repairReadiness: string }>; compatibleParts: Array<{ partNumber: string; name: string; availableQuantity: number; warehouse: string; shelf: string | null; repairReadiness: string }>; lowStock: Array<{ partNumber: string; name: string; availableQuantity: number; reorderLevel: number; warehouse: string; shelf: string | null }> };
 }
 
 export interface CopilotPrompt {
   system: string;
   user: string;
 }
+
+export interface CopilotMemoryContext { id: string; citation: string; sourceType: string; sourceId: string; assetId: string | null; title: string; summary: string; occurredAt: string; confidence: number; rank: number; successful: boolean | null; ranking: { recency: number; similarity: number; confidence: number; successOutcome: number; frequency: number } }

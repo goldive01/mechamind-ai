@@ -1,0 +1,3 @@
+import { createSupplierSchema, inventoryQuerySchema, updateSupplierSchema, type CreateSupplierDto, type InventoryQueryDto, type UpdateSupplierDto } from "@/dto/inventory.dto";
+import type { SupplierRepository } from "@/repositories/SupplierRepository";
+export class SupplierService { constructor(private readonly repository: SupplierRepository) {} create(input: CreateSupplierDto) { return this.repository.create(createSupplierSchema.parse(input)); } update(input: UpdateSupplierDto) { return this.repository.update(updateSupplierSchema.parse(input)); } list(query: InventoryQueryDto = {}) { return this.repository.list(inventoryQuerySchema.parse(query)); } }

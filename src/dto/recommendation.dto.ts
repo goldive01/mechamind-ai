@@ -6,6 +6,7 @@ export const recommendationSchema = z.object({
   evidence: z.array(z.string().trim().min(1).max(500)).min(1), actions: z.array(z.string().trim().min(1).max(500)).min(1),
   requiredTools: z.array(z.string().trim().min(1).max(200)), requiredSkills: z.array(z.string().trim().min(1).max(200)),
   estimatedDowntime: z.string().trim().min(1).max(200), safetyWarnings: z.array(z.string().trim().min(1).max(500)), followUpInspection: z.string().trim().min(1).max(500),
+  spareParts: z.array(z.object({ partNumber: z.string().min(1), name: z.string().min(1), availableQuantity: z.number().int().nonnegative(), warehouseName: z.string().nullable(), shelf: z.string().nullable(), suggestedOrderQuantity: z.number().int().nonnegative(), supplierName: z.string().nullable(), repairReadiness: z.string().min(1), reason: z.string().min(1) })).optional(),
 });
 export type RecommendationDto = z.infer<typeof recommendationSchema>;
 export function serializeRecommendation(recommendation: RecommendationDto) { return JSON.stringify(recommendationSchema.parse(recommendation)); }

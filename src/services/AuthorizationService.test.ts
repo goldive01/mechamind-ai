@@ -1,0 +1,5 @@
+import { describe, expect, it, vi } from "vitest";
+import { AuthorizationError, AuthorizationService } from "@/services/AuthorizationService";
+import type { AuditService } from "@/services/AuditService";
+const session = { id: "s1", expiresAt: new Date(Date.now() + 1000), lastSeenAt: new Date(), user: { id: "u1", fullName: "Alex", email: "a@example.com", active: true, role: { id: "r1", name: "Engineer", description: null, permissions: [{ id: "p1", code: "assets:read", name: "Read", description: null }] } } };
+describe("AuthorizationService", () => { it("allows assigned permissions", async () => { await expect(new AuthorizationService().require(session, "assets:read")).resolves.toEqual(session.user); }); it("denies and audits missing permissions", async () => { const audit = { record: vi.fn(), history: vi.fn() } as unknown as AuditService; await expect(new AuthorizationService(audit).require(session, "assets:write")).rejects.toBeInstanceOf(AuthorizationError); expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ outcome: "DENIED" })); }); });

@@ -37,6 +37,14 @@ Client -> Route handler / Server action -> DTO validation -> Service
 
 Routes contain transport-only concerns. Services can be unit tested with repository doubles, and repository implementations can change without changing domain or service code. API responses are built through the shared `apiSuccess` and `apiError` functions while preserving the pre-hardening JSON shapes used by the current UI.
 
+### Authentication and RBAC
+
+Authentication uses opaque, hashed, database-backed sessions. `AuthenticationService` owns credential verification, `SessionService` owns session lifecycle operations, and `AuthorizationService` evaluates permission codes from the authenticated user's role. User, role, permission, session, and audit persistence are exposed through repository contracts; Prisma remains confined to infrastructure adapters. Dashboard and mobile layouts validate sessions for reads, while Server Actions and route handlers repeat permission checks at the mutation boundary. Copilot receives the same authenticated principal and filters tool execution through its permissions.
+
+### Multi-organisation boundaries
+
+`Organisation` is the tenant root. Memberships grant users access to an organisation, while sites, buildings, and areas form its physical hierarchy. Tenant-aware repository adapters receive or validate an organisation identifier and include it in reads, writes, updates, and deletes. Copilot conversations and context are bound to the selected organisation, and engineering timelines expose organisation and location metadata without crossing that boundary.
+
 ### Copilot flow
 
 `POST /api/copilot/chat` delegates history loading and persistence to `ConversationService`. `ContextBuilder` reads operational data through `CopilotContextRepository`, combines it with HealthEngine analytics and derived alerts, and passes structured context to `PromptBuilder`. The completed structured response is validated by `ResponseParser`, persisted, and emitted to the client as newline-delimited streaming events. Legacy non-streaming Copilot requests remain supported.
@@ -60,3 +68,7 @@ The v1.3 alert domain foundation defines persistence-independent severity, categ
 ### Intelligent notifications and escalation
 
 `NotificationEngine` converts changed alerts into validated notification DTOs using severity plans from `EscalationEngine`. `NotificationQueue` separates scheduling from dispatch: critical and high alerts dispatch immediately, critical alerts retain delayed escalation jobs until acknowledged or resolved, medium alerts wait for the daily summary window, and low alerts are logged only. `NotificationService` dispatches due jobs through a provider abstraction. Email, push, SMS, Teams, Slack, and webhook providers are intentionally log-only in v1.3; external delivery and durable queue infrastructure remain future adapter concerns.
+
+### Engineering memory
+
+Engineering Memory sits behind `MemoryRepository`. `MemoryIngestionService` converts operational outcomes into validated, tenant-scoped memories, while search and deterministic ranking combine recency, lexical similarity, confidence, successful outcome, and frequency. Every Copilot provider request retrieves ranked experience and injects stable `[Memory:<id>]` citations into prompt context.
